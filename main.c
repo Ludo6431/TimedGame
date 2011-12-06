@@ -29,7 +29,7 @@ int main(int argc, char** argv){
                                 break;
                      case '/' : jouer_coup();
                                 break;
-                     default : printf("\n Vous n'avez pas entrez de choix correct\n");
+                     default : printf("\n Vous n'avez pas entré de choix correct\n");
                      }
 
     }//end while
