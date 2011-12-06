@@ -1,1 +1,7 @@
 Timed Game for a school project.
+
+Files:
+    tools   -- generic tools
+    alloc   -- wrappers to check return values of dynamic allocation functions [tools]
+    list    -- manage singly-linked lists           [alloc]
+
