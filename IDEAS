@@ -1,0 +1,4 @@
+Mémoire partagée :
+    * une partie en cours par segment de mémoire partagée
+    * la clef de la mémoire partagée est basée sur le fichier .histo stocké dans /tmp
+
