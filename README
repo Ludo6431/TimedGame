@@ -1,7 +1,11 @@
 Timed Game for a school project.
 
 Files:
-    tools   -- generic tools
-    alloc   -- wrappers to check return values of dynamic allocation functions [tools]
-    list    -- manage singly-linked lists           [alloc]
+    tools           -- generic tools
+    alloc           -- wrappers to check return values of dynamic allocation functions [tools]
+    list            -- manage singly-linked lists [alloc]
+
+    shm             -- shared memory management
+    menu            -- menu management
+    menu_functions  -- handlers of the different functions of the menu
 
