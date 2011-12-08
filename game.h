@@ -26,11 +26,14 @@ typedef struct {    // define a turn of the game
     ePlayer player;
 
     eTurnTypes type;
+
+    time_t t_remainig;
 } sGameTurn;
 
 typedef struct {
     eGameState state;   // current state of the game
     ePlayer player;    // current player
+    char playername[2][9];  // players names
 
     LIST *turns;    // list of game turns
 
