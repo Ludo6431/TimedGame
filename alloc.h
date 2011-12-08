@@ -1,9 +1,10 @@
 #ifndef _ALLOC_H
 #define _ALLOC_H
 
-#include <stdlib.h>
+#include <stdlib.h> // calloc, malloc, free, realloc
+#include <string.h> // strdup
 
-#include "tools.h"
+#include "tools.h"  // exitOnErrSyst
 
 // fonctions qui permettent de gérer les erreurs pour les fonctions d'allocations dynamique
 
@@ -37,6 +38,15 @@ static inline void *xrealloc(void *ptr, size_t size) {
 
     if(size && !ret)
         exitOnErrSyst("realloc", NULL);
+
+    return ret;
+}
+
+static inline char *xstrdup(const char *s) {
+    char *ret=strdup(s);
+
+    if(s && !ret)
+        exitOnErrSyst("strdup", s);
 
     return ret;
 }
