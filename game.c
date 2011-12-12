@@ -11,20 +11,21 @@
 
 sGame *game_new(sGame *g, const char *fname){
 	int cle,id; 
-	char playername[9];
 	sShm* adresse;
-   	time_t tturn,ttotal;
 	
-    /*récupération des informations sur la partie*/
+    /*récupération des informations sur la partie et initialisation de g*/
 	printf("Entrez votre nom :\n")
-	//fgets(g.playername[1][],9,stdin);
-	fgets(playername,9,stdin);
+	fgets(g.playername[1][],9,stdin);
 
    	printf("Entrez la durée de la partie (en secondes) : \n")
-	scanf("%d", &ttotal);
+	scanf("%d", g->t_total);
 
     	printf("Entrez le temps alloué à un coup : \n")
-	scanf("%d", &tturn);
+	scanf("%d", g->t_turn);
+
+	g.t_remaining=g.t_total;
+	g.state=GS_INIT;
+	g.player=P_1;
 	
     /*creation de la clee*/
 
@@ -36,17 +37,16 @@ sGame *game_new(sGame *g, const char *fname){
 	
 	shmlock(adresse);
 	
-    /*initialisation de la variable g passée en parametre*/
-	g.playername[1][]=playername;
-	g.t_total=ttotal;
-	g->t_turn=tturn;
+    /*écriture dans la memoire partagée*/
 	
-	g.state=GS_INIT;
-	g.player=P_1;
+	adresse.stp=g.player;
+	adresse.stg=g.state;
 
 	shmunlock(adresse);
 
 	printf("Vous etes le joueur n°1 \n");
+
+	return g;
  
 }
 
