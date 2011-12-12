@@ -39,6 +39,7 @@ typedef struct {
 
     time_t t_remaining;
     time_t t_total;
+    time_t t_turn;
 } sGame;
 
 // new game from scratch

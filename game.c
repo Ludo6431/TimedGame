@@ -11,33 +11,43 @@
 
 sGame *game_new(sGame *g, const char *fname){
 	int cle,id; 
+	char playername[9];
 	sShm* adresse;
-
+   	time_t tturn,ttotal;
+	
+    /*récupération des informations sur la partie*/
 	printf("Entrez votre nom :\n")
-	fgets(g.playername[1][],50,stdin);
+	//fgets(g.playername[1][],9,stdin);
+	fgets(playername,9,stdin);
+
+   	printf("Entrez la durée de la partie (en secondes) : \n")
+	scanf("%d", &ttotal);
+
+    	printf("Entrez le temps alloué à un coup : \n")
+	scanf("%d", &tturn);
 	
     /*creation de la clee*/
 
-    cle=ftok(fname,0));
+	cle=ftok(fname,0));
 
-    id=ouverture_memoire_partage(cle);
+	id=ouverture_memoire_partage(cle);
 
-    adresse=attachement_memoire_partage(id);
+	adresse=attachement_memoire_partage(id);
 	
 	shmlock(adresse);
 	
-    printf("Entrez la durée de la partie (en secondes) : \n")
-	scanf("%d", g->t_total);
-	g.t_remaining=g.t_total;
-    printf("Entrez le temps alloué à un coup : \n")
-	scanf("%d", g->t_turn);
+    /*initialisation de la variable g passée en parametre*/
+	g.playername[1][]=playername;
+	g.t_total=ttotal;
+	g->t_turn=tturn;
 	
 	g.state=GS_INIT;
-	
 	g.player=P_1;
-	printf("Vous etes le joueur n°1 \n")
+
 	shmunlock(adresse);
- //remarque : demander tout au debut, puis  lock,  creation, attachement, copie unlock
+
+	printf("Vous etes le joueur n°1 \n");
+ 
 }
 
 int check_histo(char *fname) {
