@@ -9,48 +9,19 @@
 
 #include "game.h"
 
-sGame *game_new(sGame *g, const char *fname){
-	int cle,id; 
-	sShm* adresse;
-	
-    /*récupération des informations sur la partie et initialisation de g*/
-	printf("Entrez votre nom :\n")
-	fgets(g.playername[1][],9,stdin);
+// creates a new game from scratch
+sGame *game_new(sGame *g, const char *fname, const char *pn1, const char *pn2) {
+    if(!g)
+        g=xcalloc(1, sizeof(*g));
 
-   	printf("Entrez la durée de la partie (en secondes) : \n")
-	scanf("%d", g->t_total);
+    strncpy(g->gamename, sizeof(g->gamename), fname);
+    strncpy(g->playername[P_1], sizeof(*g->playername), pn1);
+    strncpy(g->playername[P_2], sizeof(*g->playername), pn2);
 
-    	printf("Entrez le temps alloué à un coup : \n")
-	scanf("%d", g->t_turn);
-
-	g.t_remaining=g.t_total;
-	g.state=GS_INIT;
-	g.player=P_1;
-	
-    /*creation de la clee*/
-
-	cle=ftok(fname,0));
-
-	id=ouverture_memoire_partage(cle);
-
-	adresse=attachement_memoire_partage(id);
-	
-	shmlock(adresse);
-	
-    /*écriture dans la memoire partagée*/
-	
-	adresse.stp=g.player;
-	adresse.stg=g.state;
-
-	shmunlock(adresse);
-
-	printf("Vous etes le joueur n°1 \n");
-
-	return g;
- 
+    return g;
 }
 
-int check_histo(char *fname) {
+static int check_histo(char *fname) {
     FILE *f;
     long size;
     char *buf;
@@ -93,24 +64,29 @@ int check_histo(char *fname) {
 }
 
 // get list of valid histo files in /tmp
-LIST *game_histo_getlist() {   // get list of histo files in /tmp
+LIST *game_histo_getlist() {
     DIR *dir;
     struct dirent *dire;
     LIST *files=NULL;
-    char fpath[256];
+    char *p, fpath[256];
 
     if(!(dir=opendir("/tmp")))
         exitOnErrSyst("opendir", "/tmp");
 
     errno=0;    // to check readdir errors
     while((dire=readdir(dir)) {
-        int len=strlen(dire->d_name);
-        if(!strcasecmp(".histo", dire->d_name[len-6])) {
-            fnprintf(fpath, sizeof(fpath), "/tmp/%s", dire->d_name);
+        p=strrchr(dire->d_name, '.'); // get the index of the last '.' character in the filename
+        if(!p || strcmp(".histo", p))   // if there isn't a dot or the file extension isn't .histo, bye bye
+            continue;
 
-            if(!check_histo(fpath))
-                files=list_append(files, xstrdup(dire->d_name));
-        }
+        fnprintf(fpath, sizeof(fpath), "/tmp/%s", dire->d_name);    // build the temporary absolute path to the histo file
+
+        if(check_histo(fpath))  // check this is a valid .histo file
+            continue;
+
+        *p='\0';    // remove the extension from the filename
+
+        files=list_append(files, (void *)xstrdup(dire->d_name));    // append game name without extension
     }
     if(errno)
         exitOnErrSyst("readdir", "/tmp");
@@ -121,26 +97,28 @@ LIST *game_histo_getlist() {   // get list of histo files in /tmp
     return files;
 }
 
+// load a histo file in memory
 int game_histo_load(sGame *g, const char *name) {
     FILE *f;
     char fpath[256];
     char line[256];
-    int i;
 
-    fnprintf(fpath, 256, "/tmp/%s", name);
+    fnprintf(fpath, sizeof(fpath), "/tmp/%s.histo", name);
 
     if(!(f=fopen(fpath, "rb")))
         return 1;
 
+    strncpy(g->gamename, sizeof(g->gamename), name);
     g->turns=NULL;
 
-    while(i++, fgets(line, sizeof(line), f)) {
+    while(fgets(line, sizeof(line), f)) {
         if(line[0]=='H' && line[1]=='X') {
             sscanf(line+2, "%s %s %04d%04d", &g->playername[0], &g->playername[1], &g->t_total, &g->t_remaining);
             // TODO check error and return 1
         }
         else if(line[0]=='F' && line[1]=='I' && line[2]=='N') {
             // OK, TODO check magic/CRC? and return 1
+            break;
         }
         else {
             sGameTurn *turn=xcalloc(1, sizeof(sGameTurn));
@@ -165,13 +143,14 @@ int game_histo_load(sGame *g, const char *name) {
     return 0;
 }
 
+// save a game to disc
 int game_histo_save(const sGame *g) {
     FILE *f;
     char fpath[256];
     int i;
     LIST *turns=g->turns;
 
-    fnprintf(fpath, sizeof(fpath), "/tmp/%s", name);
+    fnprintf(fpath, sizeof(fpath), "/tmp/%s.histo", g->gamename);
 
     if(!(f=fopen(fpath, "wb+")))
         return 1;
@@ -189,5 +168,11 @@ int game_histo_save(const sGame *g) {
     fclose(f);
 
     return 0;
+}
+
+int game_playturn(sGame *g, const sGameTurn *t) {
+    g->turns = list_append(g->turns, t);    // push the turn on the stack
+
+    g->player^=1;   // change player
 }
 

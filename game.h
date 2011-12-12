@@ -3,7 +3,7 @@
 
 // this is where we handle the game
 
-#include "list.h"   // LIST
+#include "list.h"   // LIST, list_*
 
 typedef enum {
     P_1=0,
@@ -34,6 +34,7 @@ typedef struct {
     eGameState state;   // current state of the game
     ePlayer player;    // current player
     char playername[2][9];  // players names
+    char gamename[64];
 
     LIST *turns;    // list of game turns
 
@@ -43,19 +44,51 @@ typedef struct {
 } sGame;
 
 // new game from scratch
-sGame *     game_new        (sGame *g, const char *name);
+sGame *     game_new                (sGame *g, const char *name, const char *pn1, const char *pn2);
 
 // game from/to .histo file
-LIST *      game_histo_getlist    ();   // get list of histo files in /tmp
-int         game_histo_load       (sGame *g, const char *name);
-int         game_histo_save       (const sGame *g);
+LIST *      game_histo_getlist      ();   // get list of histo files in /tmp
+// LIST *   game_histo_destroylist  (LIST *l);
+
+int         game_histo_load         (sGame *g, const char *name);
+int         game_histo_save         (const sGame *g);
 
 // manage a game
-eGameState  game_state      (const sGame *g);
-int         game_playturn   (sGame *g, const sGameTurn *t);
+int         game_playturn           (sGame *g, const sGameTurn *t);
 
 // destroy game
-void        game_destroy    (sGame *g);
+// void     game_destroy            (sGame *g)
+
+
+// static functions declarations:
+
+static inline
+char *          game_get_playername     (sGame *g, ePlayer p) { return g->playername[p]; }
+static inline
+void            game_set_playername     (sGame *g, ePlayer p, char *name) { strcpy(g->playername[p], name); }
+static inline
+eGameState      game_get_state          (sGame *g) { return g->state; }
+static inline
+ePlayer         game_get_player         (sGame *g) { return g->player; }
+static inline
+time_t          game_get_remainingtime  (sGame *g) { return g->t_remaining; }
+static inline
+void            game_set_remainingtime  (sGame *g, time_t t) { g->t_remaining=t; }
+static inline
+time_t          game_get_totaltime      (sGame *g) { return g->t_total; }
+static inline
+void            game_set_totaltime      (sGame *g, time_t t) { g->t_total=t; }
+
+static inline
+LIST *          game_histo_destroylist  (LIST *l) {
+    return list_destroy_full(l, (free_handler)free);
+}
+static inline
+void            game_destroy            (sGame *g) {
+    g->turns=list_destroy_full(g->turns, (free_handler)free);   // free the turns stack
+
+    g->state=GS_INIT;
+}
 
 #endif
 
