@@ -14,12 +14,19 @@ typedef struct {
     pthread_cond_t catt;
 
     // état en cours
-    eStates stm;
+    eStates stm; // ??
     eGameState stg;
+    ePlayer stp;
 
     // passage infos
-    char nom[128];
+    char nom[128]; 
 } sShm;
+
+
+int ouverture_memoire_partage(int cle);
+char* attachement_memoire_partage(int id);
+void shm_lock(sShm *Shm);
+void shm_unlock(sShm *Shm);
 
 #endif
 
