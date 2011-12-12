@@ -27,7 +27,7 @@ typedef struct {    // define a turn of the game
 
     eTurnTypes type;
 
-    time_t t_remainig;
+    time_t t_remaining;
 } sGameTurn;
 
 typedef struct {
