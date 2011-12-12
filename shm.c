@@ -34,18 +34,21 @@ char* attachement_memoire_partage(int id){
 }
 
 
-void shm_lock(sShm *Shm){
+void shm_lock(sShm *Shm) {
+    int rc;
 
-	if(pthread_mutex_lock(&Shm->m)!=0){
-		exit(EXIT_FAILURE);
-	}
+    if(rc=pthread_mutex_lock(&Shm->m)) {
+        errno=rc;
+        exitOnErrSyst("pthread_mutex_lock", "shm");
+    }
 }
 
-void shm_unlock(sShm *Shm){
+void shm_unlock(sShm *Shm) {
+    int rc;
 
-	if(pthread_mutex_unlock(&Shm->m)!=0)
-		exit(EXIT_FAILURE);
-	}
+    if(rc=pthread_mutex_unlock(&Shm->m))
+        errno=rc;
+        exitOnErrSyst("pthread_mutex_unlock", "shm");
+    }
 }
-
 
