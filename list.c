@@ -52,7 +52,7 @@ LIST *list_destroy_full(LIST *list, free_handler handler) {
         next=list->next;
 
         handler(list->data);
-        xfree(list);
+        free(list);
 
         list=next;
     }

@@ -20,7 +20,7 @@ struct {
     {'5', "Mettre en pause",                            M_INGAME},
     {'6', "Reprendre",                                  M_INGAME},
     {'7', "Visualiser l'historique",                    M_INGAME},
-    {'8', "Quitter en visualisant l'historique",        M_INGAME},
+    {'8', "Stopper en visualisant l'historique",        M_INGAME},
     {'9', "Quitter",                                    M_MAIN},
     {'9', "Retour au menu",                             M_INGAME},
     {'/', "Jouer un coup",                              M_INGAME},
