@@ -44,12 +44,14 @@ typedef struct {
 } sGame;
 
 // new game from scratch
-sGame *     game_new                (sGame *g, const char *name, const char *pn1, const char *pn2);
+sGame *     game_new                (sGame *g, const char *name);
+char *      game_get_filepath       (sGame *g);
 
 // game from/to .histo file
 LIST *      game_histo_getlist      ();   // get list of histo files in /tmp
 // LIST *   game_histo_destroylist  (LIST *l);
 
+int         game_histo_check        (char *filepath);
 int         game_histo_load         (sGame *g, const char *name);
 int         game_histo_save         (const sGame *g);
 
@@ -62,6 +64,8 @@ int         game_playturn           (sGame *g, const sGameTurn *t);
 
 // static functions declarations:
 
+static inline
+char *          game_get_name           (sGame *g) { return g->gamename; }
 static inline
 char *          game_get_playername     (sGame *g, ePlayer p) { return g->playername[p]; }
 static inline
@@ -78,6 +82,10 @@ static inline
 time_t          game_get_totaltime      (sGame *g) { return g->t_total; }
 static inline
 void            game_set_totaltime      (sGame *g, time_t t) { g->t_total=t; }
+static inline
+time_t          game_get_turntime       (sGame *g) { return g->t_turn; }
+static inline
+void            game_set_turntime       (sGame *g, time_t t) { g->t_turn=t; }
 
 static inline
 LIST *          game_histo_destroylist  (LIST *l) {

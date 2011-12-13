@@ -5,6 +5,7 @@ Files:
     alloc           -- wrappers to check return values of dynamic allocation functions [tools]
     list            -- manage singly-linked lists [alloc]
 
+    game            -- low-level management of a game
     shm             -- shared memory management
     menu            -- menu management
     menu_functions  -- handlers of the different functions of the menu

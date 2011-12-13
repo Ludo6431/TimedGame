@@ -10,23 +10,29 @@
 #include "game.h"
 
 // creates a new game from scratch
-sGame *game_new(sGame *g, const char *fname, const char *pn1, const char *pn2) {
+sGame *game_new(sGame *g, const char *fname) {
     if(!g)
         g=xcalloc(1, sizeof(*g));
 
     strncpy(g->gamename, sizeof(g->gamename), fname);
-    strncpy(g->playername[P_1], sizeof(*g->playername), pn1);
-    strncpy(g->playername[P_2], sizeof(*g->playername), pn2);
 
     return g;
 }
 
-static int check_histo(char *fname) {
+char *game_get_filepath(sGame *g) {
+    static char filepath[256];
+
+    snprintf(filepath, sizeof(filepath), "/tmp/%s.histo", g->gamename);
+
+    return filepath;
+}
+
+int game_histo_check(char *filepath) {
     FILE *f;
     long size;
     char *buf;
 
-    if(!(f=fopen(fname, "rb")))
+    if(!(f=fopen(filepath, "rb")))
         return 1;
 
     if(fseek(f, 0, SEEK_END)) {
@@ -81,7 +87,7 @@ LIST *game_histo_getlist() {
 
         fnprintf(fpath, sizeof(fpath), "/tmp/%s", dire->d_name);    // build the temporary absolute path to the histo file
 
-        if(check_histo(fpath))  // check this is a valid .histo file
+        if(game_histo_check(fpath))  // check this is a valid .histo file
             continue;
 
         *p='\0';    // remove the extension from the filename
@@ -100,12 +106,9 @@ LIST *game_histo_getlist() {
 // load a histo file in memory
 int game_histo_load(sGame *g, const char *name) {
     FILE *f;
-    char fpath[256];
     char line[256];
 
-    fnprintf(fpath, sizeof(fpath), "/tmp/%s.histo", name);
-
-    if(!(f=fopen(fpath, "rb")))
+    if(!(f=fopen(game_get_filepath(g), "rb")))
         return 1;
 
     strncpy(g->gamename, sizeof(g->gamename), name);
@@ -146,13 +149,10 @@ int game_histo_load(sGame *g, const char *name) {
 // save a game to disc
 int game_histo_save(const sGame *g) {
     FILE *f;
-    char fpath[256];
     int i;
     LIST *turns=g->turns;
 
-    fnprintf(fpath, sizeof(fpath), "/tmp/%s.histo", g->gamename);
-
-    if(!(f=fopen(fpath, "wb+")))
+    if(!(f=fopen(game_get_filepath(g), "wb+")))
         return 1;
 
     fprintf(f, "HX%s %s %04u%04u\r\n", g->playername[0], g->playername[1], g->t_total, g->t_remaining);
