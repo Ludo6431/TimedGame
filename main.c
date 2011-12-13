@@ -6,6 +6,7 @@
 
 int main(int argc, char *argv[]) {
     eMenuState MenuState=M_MAIN;
+    sGame game;
     char buf[256];
     unsigned int size=sizeof(buf);
     char *choix;
@@ -18,7 +19,7 @@ int main(int argc, char *argv[]) {
 
         switch(choix[0]) {
         case '1':
-            nouvelle_partie();
+            nouvelle_partie(&game);
             break;
         case '2':
             connexion();

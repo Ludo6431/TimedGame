@@ -22,8 +22,6 @@ typedef struct {
     char nom[128]; 
 } sShm;
 
-int     ouverture_memoire_partage   (int cle);
-char*   attachement_memoire_partage (int id);
 void    shm_lock                    (sShm *Shm);
 void    shm_unlock                  (sShm *Shm);
 
