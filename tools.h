@@ -13,6 +13,9 @@ void exitOnErrSyst(char *func, char *text);
     // func: name of the function which failed
     // text: user message
 
+// same behavior as fgets but never returns an ending '\n'
+char *readStdin(char *s, int size);
+
 #define EXIT_IF_M1(f, msg) if((f)==-1) exitOnErrSyst(#f, (msg))
 #define EXIT_IF_0 (f, msg) if((f)==0 ) exitOnErrSyst(#f, (msg))
 #define EXIT_IF_N0(f, msg) if((f)!=0 ) exitOnErrSyst(#f, (msg))

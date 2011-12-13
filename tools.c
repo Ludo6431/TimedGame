@@ -47,3 +47,14 @@ void exitOnErrSyst(char *func, char *text) {
     exit(lerrno);
 }
 
+char *readStdin(char *s, int size) {
+    char *t;
+    int len;
+
+    t=fgets(s, size, stdin);
+    if(t && len=strlen(t), t[len-1]=='\n')
+        t[len-1]='\0';
+
+    return t;
+}
+
