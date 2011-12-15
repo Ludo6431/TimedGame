@@ -8,7 +8,7 @@
 
 sGame *nouvelle_partie(sShm* adresse);
 
-sGame* connexion(sGame *g);
+sGame* connexion(sShm* adresse);
 
 void alarm_connexion(int numSig);
 

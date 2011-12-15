@@ -7,7 +7,7 @@
 #include "shm.h"
 #include "menu_functions.h"
 
-sShm* adresse; 
+//sShm* adresse; 
 
 
 //sShm *nouvelle_partie(sGame *g) {
@@ -100,7 +100,7 @@ sGame *nouvelle_partie(sShm* adresse) {
 
 
 
-sGame* connexion(sGame *g){
+sGame* connexion(sShm* adresse){
 
     char tmp[256];
     time_t ttmp;
