@@ -26,8 +26,7 @@ typedef struct {
 sShm *  shm_open    (char *path, int creat)
 void    shm_lock    (sShm *Shm);
 void    shm_unlock  (sShm *Shm);
-void    shm_close   (sShm *shm);
-void    shm_destroy (sShm *shm);
+void    shm_close   (sShm *shm, int destroy);
 
 #endif
 

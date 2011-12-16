@@ -33,10 +33,33 @@ sShm *shm_open(char *path, int creat) {
         exitOnErrSyst("shmat", NULL);
     }
 
-    if(creat)   // on initialise la mémoire si on vient de créer la zone de mémoire
+    if(creat) { // on initialise la mémoire si on vient de créer la zone de mémoire
+        pthread_mutexattr_t mattr;
+        int rc;
+
         memset((void *)shm, '\0', sizeof(sShm));
 
-    shm->shmid=shmid;
+        if(rc=pthread_mutexattr_init(&mattr)) {
+            errno=rc;
+            exitOnErrSyst("pthread_mutexattr_init", NULL);
+        }
+        if(rc=pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED)) {
+            errno=rc;
+            exitOnErrSyst("pthread_mutexattr_setpshared", NULL);
+        }
+
+        if(rc=pthread_mutex_init(&shm->m, &mattr)) {
+            errno=rc;
+            exitOnErrSyst("pthread_mutex_init", NULL);
+        }
+
+        if(rc=pthread_mutexattr_destroy(&mattr)) {
+            errno=rc;
+            exitOnErrSyst("pthread_mutexattr_destroy", NULL);
+        }
+
+        shm->shmid=shmid;
+    }
 
     return shm;
 }
@@ -59,11 +82,18 @@ void shm_unlock(sShm *Shm) {
     }
 }
 
-void shm_close(sShm *shm) {
+void shm_close(sShm *shm, int destroy) {
     shmdt((void *)shm); // on se détache
-}
 
-void shm_destroy(sShm *shm) {
-    shmctl(shm->shmid, IPC_RMID, NULL); /* marque segment pour suppression */
+    if(destroy) {
+        int rc;
+
+        if(rc=pthread_mutex_destroy(&shm->m)) {
+            errno=rc;
+            exitOnErrSyst("pthread_mutex_destroy", NULL);
+        }
+
+        shmctl(shm->shmid, IPC_RMID, NULL); /* marque segment pour suppression */
+    }
 }
 
