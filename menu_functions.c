@@ -7,107 +7,95 @@
 #include "shm.h"
 #include "menu_functions.h"
 
-//sShm* adresse; 
-
-
-//sShm *nouvelle_partie(sGame *g) {
-sGame *nouvelle_partie(sShm* adresse) {
+sShm *nouvelle_partie(sGame *g) {
     char tmp[256];
     time_t ttmp;
-    key_t shmkey;
-    int shmid;
-    sGame g;
+    sShm *shm;
+    pthread_condattr_t condattr;
+    int rc;
 
-
-    printf("Quel nom voulez-vous donner à votre partie ?\n")
+    /* récupération des informations sur la partie et initialisation de g */
+    printf("Nom de la partie       : ")
     readStdin(tmp, sizeof(tmp));
-
     game_new(g, tmp); // game_new intialise le jeu
 
-    /*récupération des informations sur la partie et initialisation de g*/
-    printf("Entrez votre nom :\n")
+    printf("Votre pseudo           : ")
     readStdin(tmp, sizeof(tmp))
     game_set_playername(g, P_1, tmp);
     
-    printf("Entrez la durée de la partie (en secondes) : \n")
+    printf("Durée de la partie (s) : ")
     readStdin(tmp, sizeof(tmp))
     game_set_totaltime(g, (time_t)atoi(tmp));
 
-    printf("Entrez le temps alloué à un coup : \n")
+    printf("Durée par coup (s)     : ")
     readStdin(tmp, sizeof(tmp))
     ttmp = atoi(tmp);
     game_set_turntime(g, ttmp);
     game_set_remainingtime(g, ttmp);
 
+    /* création mémoire partagée */
+    shm = shm_open(game_get_filepath(g), 1 /* création */);
 
-    /* création de la clef */
-    shmkey=ftok(game_get_fi
-    printf("Entrez le temps alloué à un coup : \n")lepath(g), 0);
-    /* Creation d'un segment de memoire partagee de 80 octets */
-    if((shmid = shmget(shmkey, sizeof(sShm), 0600|IPC_CREAT))==-1)
-        exitOnErrSyst("shmget", NULL);
-
-    if((int)(adresse = shmat(shmid, NULL, 0)) == -1) {
-        shmctl(shmid, IPC_RMID, NULL); /* Suppression du segment */
-        exitOnErrSyst("shmat", NULL);
+    // initialisation attributs variables conditionnelles
+    if(rc=pthread_condattr_init(&condattr)) {
+        errno=rc;
+        exitOnErrSyst("pthread_condattr_init", NULL);
+    }
+    if(rc=pthread_condattr_setpshared(&condattr, PTHREAD_PROCESS_SHARED)){
+        errno=rc;
+        exitOnErrSyst("pthread_condattr_setpthread", NULL);
     }
 
-    shm_lock(adresse);
+    shm_lock(shm);  // zone protégée
 
-    /*écriture dans la memoire partagée*/
+    shm->stp=g.player;
+    shm->stg=g.state;
 
-    adresse.stp=g.player;
-    adresse.stg=g.state;
-
-    if(pthread_cond_init(&adresse->catt,&adresse->attratt)!=0){
-	exitOnErrSyst("pthread_cond_init", NULL);
-    }
-    if(pthread_condattr_init(&adresse->attratt)=!0){
-	exitOnErrSyst("pthread_condattr_init", NULL);
-    }
-    if(pthread_condattr_setpthread(&adresse->attratt,PTHREAD_PROCESS_SHARED)=!0){
-	exitOnErrSyst("pthread_condattr_setpthread", NULL);
+    if(rc=pthread_cond_init(&shm->catt, &condattr)){
+        errno=rc;
+        exitOnErrSyst("pthread_cond_init", NULL);
     }
 
-    shm_unlock(adresse);
+    shm_unlock(shm);
+
+    // destruction attributs variables conditionnelles
+    if(rc=pthread_condattr_destroy(&condattr)) {
+        errno=rc;
+        exitOnErrSyst("pthread_condattr_destroy", NULL);
+    }
 
     printf("Vous êtes le joueur n°1\n");
 
-
     /* Installation du handler gestionAlarme pour SIGALRM */
-    signal(SIGALRM,alarm_connexion);
+    signal(SIGALRM, alarm_connexion);
 
     //utiliser var cond pthread_condattr_setpshared, faire toute l'initialisation de la var conditionnelle
     alarm(30);
 
-    pthread_mutex_lock(adresse->matt);
-    pthread_cond_wait(adresse->catt);
-    pthread_mutex_lock(adresse->matt);
+    pthread_mutex_lock(shm->matt);
+    pthread_cond_wait(shm->catt);
+    pthread_mutex_lock(shm->matt);
 
-	if(adresse->stp==P_1){
-		printf(" Le deuxième joueur ne s'est pas connecté à temps");
-		//detruire la memoire partagée ? 
-	}
+    if(shm->stp==P_1){
+        printf(" Le deuxième joueur ne s'est pas connecté à temps");
+        //detruire la memoire partagée ? 
+    }
+    else{
+        printf(" La partie commence");
+        //afficher le jeu
+    }
 
-	else{
-		printf(" La partie commence");
-		//afficher le jeu
-	}
-
-    return g;
+    return shm;
 }
 
-
-
-
-sGame* connexion(sShm* adresse){
-
+sShm *connexion(sGame *g) {
     char tmp[256];
     time_t ttmp;
     key_t shmkey;
     int shmid;
-   // sShm* adresse;
-    sGame *g;
+    sShm *shm;
+
+    // TODO lister parties (cf game_histo_*) et en choisir une
 
     printf("Entrez le nom de la partie que vous voulez rejoindre :\n")
     readStdin(tmp, sizeof(tmp));
@@ -119,16 +107,8 @@ sGame* connexion(sShm* adresse){
     readStdin(tmp, sizeof(tmp))
     game_set_playername(g, P_2, tmp);
     
-
-    /* création de la clef */
-    shmkey=ftok(game_get_filepath(g), 0);
-    /* Ouverture d'un segment de memoire partagee de 80 octets */
-    if((shmid = shmget(shmkey, sizeof(sShm), 0600|IPC_CREAT))==-1)
-        exitOnErrSyst("shmget", NULL);
-    if((int)(adresse = shmat(shmid, NULL, 0)) == -1) {
-        shmctl(shmid, IPC_RMID, NULL); /* Suppression du segment */
-        exitOnErrSyst("shmat", NULL);
-    }
+    // ouverture de la mémoire partagée existante
+    shm = shm_open(game_get_filepath(g), 0 /* attachement */);
 
     shm_lock(adresse);
 
@@ -146,16 +126,13 @@ sGame* connexion(sShm* adresse){
     //mettre les champs de temps de jeu et de coup de g a jour ( rajouter cela dans la structure sShm et le récupérer
     // afficher jeu
 
-	return g;
+    return shm;
 }
-
-
 
 void reprise_partie_sauvegarde(void){
 
 
 }
-
 
 /* a mettre dans game.c ..?*/
 void alarm_connexion(int numSig) {
@@ -165,5 +142,4 @@ void alarm_connexion(int numSig) {
     pthread_mutex_lock(adresse->matt);
 
 }
-
 

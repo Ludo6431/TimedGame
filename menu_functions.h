@@ -3,12 +3,8 @@
 
 // prototypes of menu_functions.c
 
-
-
-
-sGame *nouvelle_partie(sShm* adresse);
-
-sGame* connexion(sShm* adresse);
+sShm *  nouvelle_partie (sGame *g);
+sShm *  connexion       (sGame *g);
 
 void alarm_connexion(int numSig);
 

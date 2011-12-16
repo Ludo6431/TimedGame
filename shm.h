@@ -13,7 +13,6 @@ typedef struct {
     // synchro attente
     pthread_mutex_t matt;
     pthread_cond_t catt;
-    pthread_condattr_t attratt;
 
     // état en cours
     eStates stm; // ??
