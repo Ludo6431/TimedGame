@@ -7,6 +7,7 @@
 
 typedef struct {
     // synchro accés shm
+    int shmid;
     pthread_mutex_t m;
 
     // synchro attente
@@ -23,8 +24,11 @@ typedef struct {
     char nom[128]; 
 } sShm;
 
-void    shm_lock                    (sShm *Shm);
-void    shm_unlock                  (sShm *Shm);
+sShm *  shm_open    (char *path, int creat)
+void    shm_lock    (sShm *Shm);
+void    shm_unlock  (sShm *Shm);
+void    shm_close   (sShm *shm);
+void    shm_destroy (sShm *shm);
 
 #endif
 
