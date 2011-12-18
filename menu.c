@@ -8,50 +8,65 @@
 - la fonction d'affichage du menu qui récupère aussi le choix de l'utilisateur
 */
 
+strict {
+    unsigned int flag;
+    char *msg;
+} states[]={
+    {M_MAIN,    "Menu principal"},
+    {M_WAIT,    "Attente d'un joueur..."},
+    {M_INGAME,  "Partie en cours"},
+    {M_PAUSED,  "Partie en pause"},
+}
+
 struct {
     char key;
     char *msg;
     unsigned int flags;
 } menu[]={
-    {'1', "Nouvelle partie",                            M_MAIN},
-    {'2', "Connexion à une partie",                     M_MAIN},
-    {'3', "Charger une partie sauvegardée",             M_MAIN},
-    {'4', "Stopper en sauvegardant",                    M_INGAME},
-    {'5', "Mettre en pause",                            M_INGAME},
-    {'6', "Reprendre",                                  M_INGAME},
-    {'7', "Visualiser l'historique",                    M_INGAME},
-    {'8', "Stopper en visualisant l'historique",        M_INGAME},
-    {'9', "Quitter",                                    M_MAIN},
-    {'9', "Retour au menu",                             M_INGAME},
-    {'/', "Jouer un coup",                              M_INGAME},
+    {'1', "Nouvelle partie",                        M_MAIN                             },
+    {'2', "Connexion à une partie",                 M_MAIN                             },
+    {'3', "Charger une partie sauvegardée",         M_MAIN                             },
+    {'4', "Stopper en sauvegardant",                                M_INGAME| M_PAUSED },
+    {'5', "Mettre en pause",                                        M_INGAME           },
+    {'6', "Reprendre",                                                        M_PAUSED },
+    {'7', "Visualiser l'historique",                                M_INGAME| M_PAUSED },
+    {'8', "Stopper en visualisant l'historique",                    M_INGAME| M_PAUSED },
+    {'9', "Quitter",                                M_MAIN                             },
+    {'9', "Retour au menu principal",                       M_WAIT| M_INGAME| M_PAUSED },
+    {'/', "Jouer un coup",                                          M_INGAME           },
 }
 
-// affiche le menu pour un état de menu donné et récupère une ligne tapée au clavier par l'utilisateur
-char *menu_run(eMenuState st, char *buf, unsigned int *size) {
+// affiche le menu pour un état de menu donné, récupère une ligne tapée au clavier par l'utilisateur et vérifie que le choix est possible
+char *menu_run(eMenuState st, char *buf, unsigned int size) {
     char *ret;
+    int i;
 
-    if(!buf) {
-        buf=xmalloc(256);
-        *size=256;
-    }
+    // print menu title
+    for(i=0; i<sizeof(states)/sizeof(*states); i++)
+        if(states[i].flag & st)
+            printf("%s\n", states[i].msg);
 
+    // print menu items
     for(i=0; i<sizeof(menu)/sizeof(*menu); i++)
         if(menu[i].flags & st)
             printf("\t%c : %s\n", menu[i].key, menu[i].msg);
 
-    ret=fgets(buf, *size, stdin);
+    // get a line from the standard input
+    ret=fgets(buf, size, stdin);
+    if(!ret)
+        return NULL;
 
-    if(ret) {
-        *size=strlen(ret)+1;
+    size=strlen(ret);
 
-        if(ret[*size-2]=='\n') {
-            ret[*size-2]='\0';
-            (*size)--;
-        }
-    }
-    else
-        *size=0;
+    // remove the trailing line feeding
+    if(ret[size-1]=='\n')
+        ret[size-1]='\0';
 
-    return ret;
+    // check user input
+    for(i=0; i<sizeof(menu)/sizeof(*menu); i++)
+        if(menu[i].flags & st && ret[0]==menu[i].key)
+            return ret;
+
+    return NULL;
 }
 

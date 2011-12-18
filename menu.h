@@ -5,11 +5,12 @@
 
 typedef enum {
     M_MAIN      =BIT(0),
-    M_INGAME    =BIT(1),
-    NB_MENU
+    M_WAIT      =BIT(1),
+    M_INGAME    =BIT(2),
+    M_PAUSED    =BIT(3),
 } eMenuState;
 
-char *menu_run(eMenuState st, char *buf, unsigned int *size);
+char *menu_run(eMenuState st, char *buf, unsigned int size);
 
 #endif
 
