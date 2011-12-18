@@ -1,14 +1,16 @@
-#include <stdlib.h>
-#include <stdio.h>
-
-#include "alloc.h"  // xalloc
-
 /************************** menu.c ************************/
 /* Ce fichier comporte :
 - la fonction d'affichage du menu qui récupère aussi le choix de l'utilisateur
 */
 
-strict {
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "alloc.h"  // xalloc
+
+#include "menu.h"
+
+struct {
     unsigned int flag;
     char *msg;
 } states[]={
@@ -16,7 +18,7 @@ strict {
     {M_WAIT,    "Attente d'un joueur..."},
     {M_INGAME,  "Partie en cours"},
     {M_PAUSED,  "Partie en pause"},
-}
+};
 
 struct {
     char key;
@@ -34,7 +36,7 @@ struct {
     {'9', "Quitter",                                M_MAIN                             },
     {'9', "Retour au menu principal",                       M_WAIT| M_INGAME| M_PAUSED },
     {'/', "Jouer un coup",                                          M_INGAME           },
-}
+};
 
 // affiche le menu pour un état de menu donné, récupère une ligne tapée au clavier par l'utilisateur et vérifie que le choix est possible
 char *menu_run(eMenuState st, char *buf, unsigned int size) {
@@ -50,6 +52,9 @@ char *menu_run(eMenuState st, char *buf, unsigned int size) {
     for(i=0; i<sizeof(menu)/sizeof(*menu); i++)
         if(menu[i].flags & st)
             printf("\t%c : %s\n", menu[i].key, menu[i].msg);
+
+    printf(">");
+    fflush(stdout);
 
     // get a line from the standard input
     ret=fgets(buf, size, stdin);

@@ -3,6 +3,9 @@
 
 // this is where we handle the game
 
+#include <string.h> // strcpy
+#include <stdlib.h> // free
+
 #include "list.h"   // LIST, list_*
 
 typedef enum {
@@ -45,7 +48,7 @@ typedef struct {
 
 // new game from scratch
 sGame *     game_new                (sGame *g, const char *name);
-char *      game_get_filepath       (sGame *g);
+char *      game_get_filepath       (const sGame *g);
 
 // game from/to .histo file
 LIST *      game_histo_getlist      ();   // get list of histo files in /tmp

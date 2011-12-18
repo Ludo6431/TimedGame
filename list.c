@@ -6,7 +6,7 @@
 
 // gestion de listes simplement chainées
 
-LIST *list_append(LIST *list, void *data) {
+LIST *list_append(LIST *list, const void *data) {
     LIST *start=list;
 
     if(list) {
@@ -23,7 +23,7 @@ LIST *list_append(LIST *list, void *data) {
         list->next=NULL;
     }
 
-    list->data=data;
+    list->data=(void *)data;
 
     return start;
 }

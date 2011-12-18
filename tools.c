@@ -1,6 +1,7 @@
 #include <stdlib.h> // exit
 #include <stdio.h>  // fprintf, perror
 #include <errno.h>  // errno
+#include <string.h> // strlen
 
 #include "tools.h"
 
@@ -52,7 +53,11 @@ char *readStdin(char *s, int size) {
     int len;
 
     t=fgets(s, size, stdin);
-    if(t && len=strlen(t), t[len-1]=='\n')
+    if(!t)
+        return t;
+
+    len=strlen(t);
+    if(t[len-1]=='\n')
         t[len-1]='\0';
 
     return t;

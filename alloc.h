@@ -9,7 +9,7 @@
 // fonctions qui permettent de gérer les erreurs pour les fonctions d'allocations dynamique
 
 static inline void *xcalloc(size_t nmemb, size_t size) {
-    void *ret=calloc(nbmeb, size);
+    void *ret=calloc(nmemb, size);
 
     if(nmemb && size && !ret)
         exitOnErrSyst("calloc", NULL);
@@ -46,7 +46,7 @@ static inline char *xstrdup(const char *s) {
     char *ret=strdup(s);
 
     if(s && !ret)
-        exitOnErrSyst("strdup", s);
+        exitOnErrSyst("strdup", (char *)s);
 
     return ret;
 }

@@ -12,7 +12,7 @@ struct LIST {
 
 typedef void (*free_handler)(void *);
 
-LIST *  list_append         (LIST *list, void *data);
+LIST *  list_append         (LIST *list, const void *data);
 LIST *  list_destroy        (LIST *list);
 LIST *  list_destroy_full   (LIST *list, free_handler handler);
 

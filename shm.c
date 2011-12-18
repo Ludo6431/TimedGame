@@ -6,11 +6,12 @@
 */
 
 #include <string.h> // memset
-#include <sys/types.>   // key_t
+#include <sys/types.h>   // key_t
 #include <sys/ipc.h>    // ftok
 #include <sys/shm.h>    // shm*
+#include <errno.h>  // errno
 
-#include "tools."   // exitOnErrSyst
+#include "tools.h"   // exitOnErrSyst
 
 #include "shm.h"    // sShm
 
@@ -21,7 +22,7 @@ sShm *shm_open(char *path, int creat) {
 
     /* création de la clef */
     if((shmkey=ftok(path, 0))==(key_t)-1)
-        exitOnErrSyst("ftok", game_get_filepath(g));
+        exitOnErrSyst("ftok", path);
 
     /* création d'un segment de memoire partagee */
     if((shmid = shmget(shmkey, sizeof(sShm), 0600|(creat?IPC_CREAT|IPC_EXCL:0)))==-1)
@@ -39,21 +40,21 @@ sShm *shm_open(char *path, int creat) {
 
         memset((void *)shm, '\0', sizeof(sShm));
 
-        if(rc=pthread_mutexattr_init(&mattr)) {
+        if((rc=pthread_mutexattr_init(&mattr))) {
             errno=rc;
             exitOnErrSyst("pthread_mutexattr_init", NULL);
         }
-        if(rc=pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED)) {
+        if((rc=pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED))) {
             errno=rc;
             exitOnErrSyst("pthread_mutexattr_setpshared", NULL);
         }
 
-        if(rc=pthread_mutex_init(&shm->m, &mattr)) {
+        if((rc=pthread_mutex_init(&shm->m, &mattr))) {
             errno=rc;
             exitOnErrSyst("pthread_mutex_init", NULL);
         }
 
-        if(rc=pthread_mutexattr_destroy(&mattr)) {
+        if((rc=pthread_mutexattr_destroy(&mattr))) {
             errno=rc;
             exitOnErrSyst("pthread_mutexattr_destroy", NULL);
         }
@@ -67,7 +68,7 @@ sShm *shm_open(char *path, int creat) {
 void shm_lock(sShm *Shm) {
     int rc;
 
-    if(rc=pthread_mutex_lock(&Shm->m)) {
+    if((rc=pthread_mutex_lock(&Shm->m))) {
         errno=rc;
         exitOnErrSyst("pthread_mutex_lock", "shm");
     }
@@ -76,24 +77,24 @@ void shm_lock(sShm *Shm) {
 void shm_unlock(sShm *Shm) {
     int rc;
 
-    if(rc=pthread_mutex_unlock(&Shm->m))
+    if((rc=pthread_mutex_unlock(&Shm->m))) {
         errno=rc;
         exitOnErrSyst("pthread_mutex_unlock", "shm");
     }
 }
 
 void shm_close(sShm *shm, int destroy) {
-    shmdt((void *)shm); // on se détache
-
     if(destroy) {
         int rc;
 
-        if(rc=pthread_mutex_destroy(&shm->m)) {
+        if((rc=pthread_mutex_destroy(&shm->m))) {
             errno=rc;
             exitOnErrSyst("pthread_mutex_destroy", NULL);
         }
 
         shmctl(shm->shmid, IPC_RMID, NULL); /* marque segment pour suppression */
     }
+
+    shmdt((void *)shm); // on se détache
 }
 
