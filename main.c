@@ -3,6 +3,7 @@
 
 #include "menu.h"   // menu_run
 #include "menu_functions.h" // ...
+#include "timer.h"  // timer_expired
 
 int main(int argc, char *argv[]) {
     eMenuState MenuState=M_MAIN;
@@ -14,6 +15,8 @@ int main(int argc, char *argv[]) {
     while(1) {
         if(!(choix=menu_run(MenuState, buf, sizeof(buf))) || !strlen(choix))
             continue;   // loop
+
+        timer_stop();
 
         switch(choix[0]) {
         case '1':   // M_MAIN, "Nouvelle partie"
@@ -69,6 +72,14 @@ int main(int argc, char *argv[]) {
         case '/':   // M_INGAME, "Jouer un coup"
             jouer_coup(&game, shm);
             break;
+        }
+
+        if(timer_expired()) {
+            // TODO afficher message erreur
+
+            retour_menu(&game, shm);
+            shm=NULL;
+            MenuState=M_MAIN;
         }
     }   // end while
 

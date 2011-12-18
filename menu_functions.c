@@ -1,10 +1,13 @@
 /************************** fonctionsmenu.c ************************/
 /* Ce fichier comporte les fonctions appelées par choix_menu
 */
+#include <stdio.h>  // printf
+#include <pthread.h>    // pthread_*
 
-#include "tools.h" // readStdin
-#include "game.h"
-#include "shm.h"
+#include "tools.h"  // readStdin, exitOnErrSyst
+#include "game.h"   // game_*
+#include "shm.h"    // shm_*
+
 #include "menu_functions.h"
 
 sShm *nouvelle_partie(sGame *g) {
@@ -66,24 +69,16 @@ sShm *nouvelle_partie(sGame *g) {
 
     printf("Vous êtes le joueur n°1\n");
 
-    /* Installation du handler gestionAlarme pour SIGALRM */
-    signal(SIGALRM, alarm_connexion);
+    void _update(int sig, int t, void *data) {
+        printf("\x1b[s\x1b[0;0H");
 
-    //utiliser var cond pthread_condattr_setpshared, faire toute l'initialisation de la var conditionnelle
-    alarm(30);
+        printf("Il te reste %02d secondes", t);
 
-    pthread_mutex_lock(shm->matt);
-    pthread_cond_wait(shm->catt);
-    pthread_mutex_lock(shm->matt);
-
-    if(shm->stp==P_1){
-        printf(" Le deuxième joueur ne s'est pas connecté à temps");
-        //detruire la memoire partagée ? 
+        printf("\x1b[u");
+        fflush(stdout);
     }
-    else{
-        printf(" La partie commence");
-        //afficher le jeu
-    }
+
+    timer_start(30, _update, NULL);
 
     return shm;
 }
@@ -129,7 +124,7 @@ sShm *connexion(sGame *g) {
     return shm;
 }
 
-void reprise_partie_sauvegarde(void){
+void reprise_partie_sauvegarde(void) {
 
 
 }
