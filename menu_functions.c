@@ -88,48 +88,45 @@ sShm *nouvelle_partie(sGame *g) {
     return shm;
 }
 
-#if 0
 sShm *connexion(sGame *g) {
     char tmp[256];
-    time_t ttmp;
-    key_t shmkey;
-    int shmid;
     sShm *shm;
+    LIST *l, *ltmp;
 
-    // TODO lister parties (cf game_histo_*) et en choisir une
+    printf("Parties ouvertes :\n");
+    ltmp=l=game_histo_getlist();
+    while(ltmp) {
+        printf("\t%s\n", (char *)ltmp->data);
+        // TODO vérifier que les parties sont en cours
+
+        ltmp=ltmp->next;
+    }
 
     printf("Entrez le nom de la partie que vous voulez rejoindre :\n");
     readStdin(tmp, sizeof(tmp));
-
     game_new(g, tmp); // game_new intialise le jeu
+    // TODO choisir une partie dans la liste avec son numéro ?
 
     /*récupération des informations sur la partie et initialisation de g*/
+    printf("Vous êtes le joueur n°2\n");
+    game_set_me(g, P_2);
+
     printf("Entrez votre nom :\n");
     readStdin(tmp, sizeof(tmp));
-    game_set_playername(g, P_2, tmp);
+    game_set_player(g, P_2, tmp);
 
     // ouverture de la mémoire partagée existante
     shm = shm_open(game_get_filepath(g), 0 /* attachement */);
 
-    shm_lock(adresse);
+    /* écriture dans la memoire partagée */
+    shm_lock(shm);
 
-    /*écriture dans la memoire partagée*/
-
-    adresse.stp=g.player; //permet au P_1 de tester si le P_2 s'est connecté
-
-    shm_unlock(adresse);
-
-    pthread_mutex_lock(adresse->matt);
-    pthread_cond_signal(adresse->catt);
-    pthread_mutex_lock(adresse->matt);
-
-    printf("Vous êtes le joueur n°2\n");
-    //mettre les champs de temps de jeu et de coup de g a jour ( rajouter cela dans la structure sShm et le récupérer
-    // afficher jeu
+    shm_unlock(shm);
 
     return shm;
 }
 
+#if 0
 void reprise_partie_sauvegarde(void) {
 
 

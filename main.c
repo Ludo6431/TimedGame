@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
                 MenuState=M_WAIT;
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
-//            shm=connexion(&game);
+            shm=connexion(&game);
             if(shm)
                 MenuState=M_INGAME;
             break;

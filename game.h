@@ -35,7 +35,7 @@ typedef struct {    // define a turn of the game
 
 typedef struct {
     eGameState state;   // current state of the game
-    ePlayer player;    // current player
+    ePlayer player, me;    // current player, who i am
     char playername[2][9];  // players names
     char gamename[64];
 
@@ -69,6 +69,10 @@ int         game_playturn           (sGame *g, const sGameTurn *t);
 
 static inline
 char *          game_get_name           (sGame *g) { return g->gamename; }
+static inline
+ePlayer         game_get_me             (sGame *g) { return g->me; }
+static inline
+void            game_set_me             (sGame *g, ePlayer p) { g->me=p; }
 static inline
 char *          game_get_playername     (sGame *g, ePlayer p) { return g->playername[p]; }
 static inline
