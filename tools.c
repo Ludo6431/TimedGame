@@ -38,11 +38,11 @@ void exitOnErrSyst(char *func, char *text) {
     int lerrno = errno;
 
     // tell the user there is an error and the function which caused it
-    fprintf(stderr, "ERROR function %s%s", func, (text && *text)?" - ":"");
+    fprintf(stderr, "ERROR function %s%s", func, (text && *text)?" - ":":");
 
     // print the user msg and the system msg
     errno = lerrno; // restore the error
-    perror(text?:"");
+    perror(text);
 
     // we stop the execution of the program telling which error caused the stop
     exit(lerrno);
