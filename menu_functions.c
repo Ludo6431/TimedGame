@@ -4,20 +4,22 @@
 #include <stdio.h>  // printf
 #include <pthread.h>    // pthread_*
 #include <errno.h>  // errno
+#include <sys/types.h>  // key_t
+#include <sys/ipc.h>    // ftok
+#include <signal.h> // SIGUSR1
 
 #include "tools.h"  // readStdin, exitOnErrSyst
 #include "game.h"   // game_*
-#include "shm.h"    // shm_*
 #include "timer.h"  // timer_*
+#include "sigmsg.h" // sigmsg*
+#include "msgs.h"   // msgs_handler
 
 #include "menu_functions.h"
 
-sShm *nouvelle_partie(sGame *g) {
+int nouvelle_partie(sGame *g) {
     char tmp[256];
     time_t ttmp;
-    sShm *shm;
-    pthread_condattr_t condattr;
-    int rc;
+    key_t key;
 
     /* récupération des informations sur la partie et initialisation de g */
     printf("Nom de la partie       : ");
@@ -41,38 +43,18 @@ sShm *nouvelle_partie(sGame *g) {
     /* création fichier .histo vide pour créer la mémoire partagée */
     game_histo_save(g);
 
-    /* création mémoire partagée */
-    shm = shm_open(game_get_filepath(g), 1 /* création */);
+    /* création canal de communication */
+    if((key=ftok(game_get_filepath(g), 0))==(key_t)-1)
+        exitOnErrSyst("ftok", NULL);
 
-    // initialisation attributs variables conditionnelles
-    if((rc=pthread_condattr_init(&condattr))) {
-        errno=rc;
-        exitOnErrSyst("pthread_condattr_init", NULL);
-    }
-    if((rc=pthread_condattr_setpshared(&condattr, PTHREAD_PROCESS_SHARED))) {
-        errno=rc;
-        exitOnErrSyst("pthread_condattr_setpthread", NULL);
-    }
+    if(sigmsgget(key, 0600|IPC_CREAT|IPC_EXCL)==-1)
+        exitOnErrSyst("sigmsgget", NULL);
 
-    shm_lock(shm);  // zone protégée
+    if(sigmsgreg(SIGUSR1, (sigmsghnd)msgs_handler, (void *)g)==-1)
+        exitOnErrSyst("sigmsgreg", NULL);
 
-    shm->stp=g->player;
-    shm->stg=g->state;
-
-    if((rc=pthread_cond_init(&shm->catt, &condattr))) {
-        errno=rc;
-        exitOnErrSyst("pthread_cond_init", NULL);
-    }
-
-    shm_unlock(shm);
-
-    // destruction attributs variables conditionnelles
-    if((rc=pthread_condattr_destroy(&condattr))) {
-        errno=rc;
-        exitOnErrSyst("pthread_condattr_destroy", NULL);
-    }
-
-    printf("Vous êtes le joueur n°1\n");
+    /* ok, let's go ! */
+    printf("Vous êtes le joueur n°1\n");    // FIXME: l'utilisateur n'aura pas le temps de le voir parce que le menu va l'effacer
 
     void _update(int sig, int t, void *data) {
         printf("\x1b[s\x1b[0;0H");
@@ -85,9 +67,10 @@ sShm *nouvelle_partie(sGame *g) {
 
     timer_start(30, _update, NULL);
 
-    return shm;
+    return 0;
 }
 
+#if 0
 sShm *connexion(sGame *g) {
     char tmp[256];
     sShm *shm;
@@ -126,7 +109,6 @@ sShm *connexion(sGame *g) {
     return shm;
 }
 
-#if 0
 void reprise_partie_sauvegarde(void) {
 
 
@@ -139,7 +121,6 @@ void alarm_connexion(int numSig) {
     pthread_mutex_lock(adresse->matt);
 
 }
-#endif
 
 void retour_menu(sGame *game, sShm *shm) {
     // TODO synchronize with other player
@@ -148,4 +129,5 @@ void retour_menu(sGame *game, sShm *shm) {
 
     shm_close(shm, 1 /* destroy */);
 }
+#endif
 
