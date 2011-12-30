@@ -1,12 +1,16 @@
 Timed Game for a school project.
 
 Files:
-    tools           -- generic tools
-    alloc           -- wrappers to check return values of dynamic allocation functions [tools]
-    list            -- manage singly-linked lists [alloc]
 
+// generic
+    tools           -- generic tools
+    alloc           -- wrappers to check return values of dynamic allocation functions
+    list            -- manage singly-linked lists
+    timer           -- alarm-based timer
+    sigmsg          -- messages-based inter-processus communication
+
+// program-dependant
     game            -- low-level management of a game
-    shm             -- shared memory management
     menu            -- menu management
     menu_functions  -- handlers of the different functions of the menu
 

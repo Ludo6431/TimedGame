@@ -1,11 +1,11 @@
 Communication inter-processus (IPC) :
     * Une partie en cours par IPC
     * La clef de l'IPC est basée sur le fichier .histo stocké dans /tmp
-    * La communication entre les 2 processus sera assurée par le système d'envoi de messages sigmsg décrit ci-dessous :
+    * La communication entre les 2 processus sera assurée par le système d'envoi de messages sigmsg décrit ci-dessous
 
 Canal de communication sigmsg :
     * C'est un système d'envoi de messages bidirectionnel
-    * Il utilise une mémoire partagée et des signaux
+    * Il utilise une mémoire partagée et un signal
     * L'envoi d'un message est bloquant, il attend que le receveur l'ait reçu
     * Le receveur doit abonner une fonction à un canal de communication,
         elle sera appelée à chaque message reçu
