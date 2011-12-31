@@ -11,6 +11,7 @@
 #include "tools.h"  // readStdin, exitOnErrSyst
 #include "game.h"   // game_*
 #include "timer.h"  // timer_*
+#include "longjump.h"   // long jump stuff
 #include "sigmsg.h" // sigmsg*
 #include "msgs.h"   // msgs_handler
 
@@ -65,7 +66,7 @@ int nouvelle_partie(sGame *g) {
         fflush(stdout);
     }
 
-    timer_start(30, _update, NULL);
+    timer_start(30, &jumpenv, LJUMP_TIMER, _update, NULL);
 
     return 0;
 }

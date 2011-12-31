@@ -7,7 +7,7 @@ all:$(EXEC)
 clean:
 	rm $(EXEC)
 
-$(EXEC):tools.c timer.c menu.c menu_functions.c list.c game.c sigmsg.c msgs.c main.c
+$(EXEC):tools.c timer.c menu.c menu_functions.c list.c game.c sigmsg.c msgs.c longjump.c main.c
 	gcc -g -lrt -pthread -o $@ $^ -Wall
 
 tools.c:tools.h

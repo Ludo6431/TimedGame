@@ -7,7 +7,8 @@
 static int _timer;
 static timer_handler _uf;
 static void *_up;
-sigjmp_buf _timer_env;
+sigjmp_buf *_timer_env=NULL;
+static int _timer_expired_code=0;
 
 void _handler(int sig) {
     _timer--;
@@ -17,16 +18,19 @@ void _handler(int sig) {
 
     if(_timer<=0) {
         _timer=0;
-        siglongjmp(_timer_env, 1); // timer expired
+        siglongjmp(*_timer_env, _timer_expired_code); // timer expired
     }
 
     alarm(1);
 }
 
-int timer_start(int s, timer_handler f, void *userp) {
+int timer_start(int s, sigjmp_buf *env, int timer_expired_code, timer_handler f, void *userp) {
+// when the timer expires, there will be a long jump to env with this timer_expired_code
     _timer=s;
     _uf = f;
     _up = userp;
+    _timer_env=env;
+    _timer_expired_code=timer_expired_code;
 
     if(_uf)
         _uf(SIGALRM, _timer, _up);

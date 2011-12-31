@@ -3,7 +3,8 @@
 
 #include "menu.h"   // menu_run
 #include "menu_functions.h" // ...
-#include "timer.h"  // timer_expired
+#include "timer.h"  // timer_stop
+#include "longjump.h"   // long jump stuff
 
 int main(int argc, char *argv[]) {
     eMenuState MenuState=M_MAIN;
@@ -69,11 +70,19 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        if(timer_expired()) {
+        // save the environment here, we will come back here if the timer expires or if we receive some messages from the other process (like end_of_game, ...)
+        switch(sigsetjmp(jumpenv, 1)) {
+        case 0: // ok, environment saved
+            break;
+        case LJUMP_TIMER:   // timer expired
             // TODO afficher message erreur
 
 //            retour_menu(&game);
             MenuState=M_MAIN;
+            break;
+        default:
+fprintf(stderr, "unhandled long jump\n");
+            break;
         }
     }   // end while
 
