@@ -2,14 +2,26 @@
 #define _MSGS_H
 
 #include "game.h"
+#include "sigmsg.h"
 
 typedef enum {
-    MSG_HELLO,
-    MSG_TURN,
-    MSG_QUIT
-} eMsgs;
+    MSG_JOINGAME,
+    MSG_GAMETURN,
+    MSG_ENDGAME
+} eMsgsTypes;
 
-void msgs_handler(int sig, void *msg, unsigned int msglen, sGame *g);
+typedef struct {
+    eMsgsTypes type;
+
+    char data[MAX_SIGMSG_SZ-sizeof(eMsgsTypes)];
+} sMsg;
+
+extern sMsg last_msg;
+extern unsigned int last_msg_len;
+
+int msg_init(char *path, int msgflg);
+int msg_send(eMsgsTypes type, char *data, unsigned int datasz);
+int msg_deinit(int destroy);
 
 #endif
 

@@ -10,6 +10,7 @@ Files:
     sigmsg          -- messages-based inter-processus communication
 
 // program-dependant
+    msgs            -- sigmsg wrappers
     game            -- low-level management of a game
     menu            -- menu management
     menu_functions  -- handlers of the different functions of the menu

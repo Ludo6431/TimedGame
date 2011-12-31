@@ -5,13 +5,11 @@
 
 // prototypes of menu_functions.c
 
-int nouvelle_partie (sGame *g);
-#if 0
-sShm *  connexion       (sGame *g);
-void    retour_menu     (sGame *game, sShm *shm);
+int     nouvelle_partie (sGame *g);
+int     connexion       (sGame *g);
+void    retour_menu     (sGame *g);
 
-void alarm_connexion(int numSig);
-#endif
+//void alarm_connexion(int numSig);
 
 #endif
 

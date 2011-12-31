@@ -4,9 +4,8 @@
 #include <stdio.h>  // printf
 #include <pthread.h>    // pthread_*
 #include <errno.h>  // errno
-#include <sys/types.h>  // key_t
-#include <sys/ipc.h>    // ftok
-#include <signal.h> // SIGUSR1
+#include <sys/types.h>
+#include <sys/ipc.h>    // IPC_*
 
 #include "tools.h"  // readStdin, exitOnErrSyst
 #include "game.h"   // game_*
@@ -20,13 +19,13 @@
 int nouvelle_partie(sGame *g) {
     char tmp[256];
     time_t ttmp;
-    key_t key;
 
     /* récupération des informations sur la partie et initialisation de g */
     printf("Nom de la partie       : ");
     readStdin(tmp, sizeof(tmp));
     game_new(g, tmp); // game_new intialise le jeu
 
+    printf("Vous êtes le joueur n°1\n");
     printf("Votre pseudo           : ");
     readStdin(tmp, sizeof(tmp));
     game_set_playername(g, P_1, tmp);
@@ -45,18 +44,10 @@ int nouvelle_partie(sGame *g) {
     game_histo_save(g);
 
     /* création canal de communication */
-    if((key=ftok(game_get_filepath(g), 0))==(key_t)-1)
-        exitOnErrSyst("ftok", NULL);
+    if(msg_init(game_get_filepath(g), 0600|IPC_CREAT|IPC_EXCL)==-1)
+        exitOnErrSyst("msg_init", NULL);
 
-    if(sigmsgget(key, 0600|IPC_CREAT|IPC_EXCL)==-1)
-        exitOnErrSyst("sigmsgget", NULL);
-
-    if(sigmsgreg(SIGUSR1, (sigmsghnd)msgs_handler, (void *)g)==-1)
-        exitOnErrSyst("sigmsgreg", NULL);
-
-    /* ok, let's go ! */
-    printf("Vous êtes le joueur n°1\n");    // FIXME: l'utilisateur n'aura pas le temps de le voir parce que le menu va l'effacer
-
+    /* on peut démarrer le timer d'attente de connexion */
     void _update(int sig, int t, void *data) {
         printf("\x1b[s\x1b[0;0H");
 
@@ -71,10 +62,8 @@ int nouvelle_partie(sGame *g) {
     return 0;
 }
 
-#if 0
-sShm *connexion(sGame *g) {
+int connexion(sGame *g) {
     char tmp[256];
-    sShm *shm;
     LIST *l, *ltmp;
 
     printf("Parties ouvertes :\n");
@@ -97,19 +86,16 @@ sShm *connexion(sGame *g) {
 
     printf("Entrez votre nom :\n");
     readStdin(tmp, sizeof(tmp));
-    game_set_player(g, P_2, tmp);
+    game_set_playername(g, P_2, tmp);
 
     // ouverture de la mémoire partagée existante
-    shm = shm_open(game_get_filepath(g), 0 /* attachement */);
+    if(msg_init(game_get_filepath(g), 0600)==-1)
+        exitOnErrSyst("msg_init", NULL);
 
-    /* écriture dans la memoire partagée */
-    shm_lock(shm);
-
-    shm_unlock(shm);
-
-    return shm;
+    return 0;
 }
 
+#if 0
 void reprise_partie_sauvegarde(void) {
 
 
@@ -122,13 +108,9 @@ void alarm_connexion(int numSig) {
     pthread_mutex_lock(adresse->matt);
 
 }
-
-void retour_menu(sGame *game, sShm *shm) {
-    // TODO synchronize with other player
-
-    pthread_cond_destroy(&shm->catt);
-
-    shm_close(shm, 1 /* destroy */);
-}
 #endif
+
+void retour_menu(sGame *g) {
+    msg_deinit(!g->me);  // destroy if we are the host of the game
+}
 

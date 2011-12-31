@@ -15,7 +15,6 @@ typedef enum {
     SHM_BUSY
 } eShm;
 
-#define MAX_SIGMSG_SZ 256
 typedef struct {
     pthread_mutex_t me;
     pthread_cond_t cv;
@@ -34,7 +33,7 @@ static void *_userp=NULL;
 
 // TODO: finish, sanitize, check errors, ...
 
-int sigmsgget(key_t key, int msgflg) {   // create a new message canal
+int sigmsginit(key_t key, int msgflg) {   // create a new message canal
     // TODO: use msgflg
 
     int rc;
@@ -52,9 +51,6 @@ int sigmsgget(key_t key, int msgflg) {   // create a new message canal
     if(msgflg&IPC_CREAT) {
         pthread_mutexattr_t mattr;
         pthread_condattr_t cattr;
-
-        // init memory
-        memset((void *)shm, '\0', sizeof(sShm));
 
         // init mutex
         if((rc=pthread_mutexattr_init(&mattr))) {
@@ -140,8 +136,19 @@ int sigmsgsnd(int sig, const void *msgp, size_t msgsz, int msgflg) {   // send a
     return 0;
 }
 
+int sigmsglock() {
+    return pthread_mutex_lock(&shm->me);
+}
+
+int sigmsgunlock() {
+    return pthread_mutex_unlock(&shm->me);
+}
+
 void _dispatch(int sig) {
     pthread_mutex_lock(&shm->me);
+
+    shm->status=SHM_IDLE;
+    pthread_cond_signal(&shm->cv);
 
     _userh(sig, shm->tab, shm->tablen, _userp);
 
@@ -158,22 +165,23 @@ int sigmsgreg(int sig, sigmsghnd func, void *userp) {  // register a function wh
         return -1;
     }
 
-    pthread_mutex_lock(&shm->me);
-
     _userp=userp;
     _userh=func;
 
     signal(sig, _dispatch);
 
-    pthread_mutex_unlock(&shm->me);
+    return 0;
+}
+
+int sigmsgdeinit(int destroy) {
+    if(destroy)
+        shmctl(shmid, IPC_RMID, NULL);
+
+    shmdt(shm);
+
+    shmid=0;
+    shm=NULL;
 
     return 0;
 }
-/*
-int sigmsgctl(int cmd, struct msqid_ds *buf) {    // controls a message canal
-    // TODO
-
-    // shmctl(shmid, IPC_RMID, NULL); ...
-    // shmdt(shm); ...
-}*/
 
