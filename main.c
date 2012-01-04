@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
         }
 
         // save the environment here, we will come back here if the timer expires or if we receive some messages from the other process (like end_of_game, ...)
-        switch(sigsetjmp(jumpenv, 1)) {
+        switch(sigsetjmp(jumpenv, 1 /* save signals mask */)) {
         case 0: // ok, environment saved
             break;
         case LJUMP_TIMER:   // timer expired

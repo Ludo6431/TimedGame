@@ -43,17 +43,28 @@ int msg_init(char *path, int msgflg) {
     return 0;
 }
 
-int msg_send(eMsgsTypes type, char *data, unsigned int datasz) {
-    sMsg msg;
+int msg_send(sMsg *msg, unsigned int datasz) {
+    return sigmsgsend(SIGUSR1, (const void *)msg, datasz+sizeof(eMsgsTypes));
+}
 
-    msg.type=type;
-    memcpy(msg.data, data, datasz);
-    return sigmsgsnd(SIGUSR1, (void *)&msg, datasz+sizeof(eMsgsTypes), 0);
+int msg_transfer(sMsg *msg, unsigned int *datasz) {
+    int ret;
+
+    (*datasz)+=sizeof(eMsgsTypes);
+
+    ret=sigmsgtrans(SIGUSR1, (void *)msg, datasz);
+
+    if(*datasz)
+        (*datasz)-=sizeof(eMsgsTypes);
+
+    return ret;
+}
+
+int msg_answer(sMsg *msg, unsigned int datasz) {
+    return sigmsgans((const void *)msg, datasz+sizeof(eMsgsTypes));
 }
 
 int msg_deinit(int destroy) {
-    sigmsgdeinit(destroy);
-
-    return 0;
+    return sigmsgdeinit(destroy);
 }
 
