@@ -1,5 +1,5 @@
 /************************** fonctionsmenu.c ************************/
-/* Ce fichier comporte les fonctions appelées par choix_menu
+/* Ce fichier comporte les fonctions appelÃ©es par choix_menu
 */
 #include <stdio.h>  // printf
 #include <pthread.h>    // pthread_*
@@ -20,34 +20,34 @@ int nouvelle_partie(sGame *g) {
     char tmp[256];
     time_t ttmp;
 
-    /* récupération des informations sur la partie et initialisation de g */
+    /* rÃ©cupÃ©ration des informations sur la partie et initialisation de g */
     printf("Nom de la partie       : ");
     readStdin(tmp, sizeof(tmp));
     game_new(g, tmp); // game_new intialise le jeu
 
-    printf("Vous êtes le joueur n°1\n");
+    printf("Vous Ãªtes le joueur nÂ°1\n");
     printf("Votre pseudo           : ");
     readStdin(tmp, sizeof(tmp));
     game_set_playername(g, P_1, tmp);
 
-    printf("Durée de la partie (s) : ");
+    printf("DurÃ©e de la partie (s) : ");
     readStdin(tmp, sizeof(tmp));
     game_set_totaltime(g, (time_t)atoi(tmp));
 
-    printf("Durée par coup (s)     : ");
+    printf("DurÃ©e par coup (s)     : ");
     readStdin(tmp, sizeof(tmp));
     ttmp = atoi(tmp);
     game_set_turntime(g, ttmp);
     game_set_remainingtime(g, ttmp);
 
-    /* création fichier .histo vide pour créer la mémoire partagée */
+    /* crÃ©ation fichier .histo vide pour crÃ©er la mÃ©moire partagÃ©e */
     game_histo_save(g);
 
-    /* création canal de communication */
+    /* crÃ©ation canal de communication */
     if(msg_init(game_get_filepath(g), 0600|IPC_CREAT|IPC_EXCL)==-1)
         exitOnErrSyst("msg_init", NULL);
 
-    /* on peut démarrer le timer d'attente de connexion */
+    /* on peut dÃ©marrer le timer d'attente de connexion */
     void _update(int sig, int t, void *data) {
         printf("\x1b[s\x1b[0;0H");
 
@@ -70,7 +70,7 @@ int connexion(sGame *g) {
     ltmp=l=game_histo_getlist();
     while(ltmp) {
         printf("\t%s\n", (char *)ltmp->data);
-        // TODO vérifier que les parties sont en cours
+        // TODO vÃ©rifier que les parties sont en cours
 
         ltmp=ltmp->next;
     }
@@ -78,17 +78,17 @@ int connexion(sGame *g) {
     printf("Entrez le nom de la partie que vous voulez rejoindre :\n");
     readStdin(tmp, sizeof(tmp));
     game_new(g, tmp); // game_new intialise le jeu
-    // TODO choisir une partie dans la liste avec son numéro ?
+    // TODO choisir une partie dans la liste avec son numÃ©ro ?
 
-    /*récupération des informations sur la partie et initialisation de g*/
-    printf("Vous êtes le joueur n°2\n");
+    /*rÃ©cupÃ©ration des informations sur la partie et initialisation de g*/
+    printf("Vous Ãªtes le joueur nÂ°2\n");
     game_set_me(g, P_2);
 
     printf("Entrez votre nom :\n");
     readStdin(tmp, sizeof(tmp));
     game_set_playername(g, P_2, tmp);
 
-    // ouverture de la mémoire partagée existante
+    // ouverture de la mÃ©moire partagÃ©e existante
     if(msg_init(game_get_filepath(g), 0600)==-1)
         exitOnErrSyst("msg_init", NULL);
 
