@@ -88,6 +88,9 @@ int main(int argc, char *argv[]) {
             break;
         case LJUMP_ISR: // the other process ask me to do something
             switch(last_msg.type) {
+            case MSG_JOINGAME:
+                MenuState=M_INGAME;
+                break;
             case MSG_ENDGAME:   // the other process quit
                 retour_menu(&game); // we quit aswell
                 MenuState=M_MAIN;

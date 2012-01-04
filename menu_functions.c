@@ -64,7 +64,9 @@ int nouvelle_partie(sGame *g) {
 
 int connexion(sGame *g) {
     char tmp[256];
+    unsigned int utmp;
     LIST *l, *ltmp;
+    sMsg msg;
 
     printf("Parties ouvertes :\n");
     ltmp=l=game_histo_getlist();
@@ -86,11 +88,35 @@ int connexion(sGame *g) {
 
     printf("Entrez votre nom :\n");
     readStdin(tmp, sizeof(tmp));
-    game_set_playername(g, P_2, tmp);
+    utmp=strlen(tmp)+1;
+//    game_set_playername(g, P_2, tmp);
 
     // ouverture de la mémoire partagée existante
     if(msg_init(game_get_filepath(g), 0600, g)==-1)
         exitOnErrSyst("msg_init", NULL);
+
+    // on se signale à l'autre processus (en indiquant notre nom)
+    msg.type=MSG_JOINGAME;
+    strcpy(msg.data, tmp);
+    if(msg_transfer(&msg, &utmp)==-1)
+        exitOnErrSyst("msg_transfer", tmp);
+
+    // l'autre processus devrait nous renvoyer la conf complète du jeu
+    if(msg.type==MSG_CONFUPDATE) {
+        sGameConf *conf = (sGameConf *)msg.data;
+
+        game_set_conf(g, conf);    // configuration synchronized
+
+        printf("Configuration du jeu :\n");
+        printf("Joueur 1 : %s\n", conf->playername[P_1]);
+        printf("Joueur 2 : %s\n", conf->playername[P_2]);
+        printf("Durée de la partie : %us\n", (unsigned int)conf->t_total);
+        printf("Durée par coup     : %us\n", (unsigned int)conf->t_turn);
+    }
+    else {
+        // TODO: return to menu nicely
+        fprintf(stderr, "we didn't get the config\n");
+    }
 
     return 0;
 }

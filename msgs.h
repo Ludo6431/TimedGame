@@ -6,6 +6,7 @@
 
 typedef enum {
     MSG_JOINGAME,
+    MSG_CONFUPDATE,
     MSG_GAMETURN,
     MSG_ENDGAME
 } eMsgsTypes;

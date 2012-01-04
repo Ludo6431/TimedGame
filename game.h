@@ -15,6 +15,7 @@ typedef enum {
 
 typedef enum {
     GS_INIT,    // initial state
+    GS_WAITPLAYER,
     GS_TURN,    // turn in progress (see ePlayer to know which player turn it is)
     GS_WIN      // a player won (see ePlayer to know which one won)
 } eGameState;
@@ -34,16 +35,20 @@ typedef struct {    // define a turn of the game
 } sGameTurn;
 
 typedef struct {
-    eGameState state;   // current state of the game
-    ePlayer player, me;    // current player, who i am
+    char gamename[64];  // game name
     char playername[2][9];  // players names
-    char gamename[64];
-
-    LIST *turns;    // list of game turns
-
-    time_t t_remaining;
     time_t t_total;
     time_t t_turn;
+} sGameConf;
+
+typedef struct {
+    sGameConf conf; // configuration of the game
+
+    eGameState state;   // current state of the game
+    ePlayer player, me;    // current player, who i am
+    time_t t_remaining;
+
+    LIST *turns;    // list of game turns
 } sGame;
 
 // new game from scratch
@@ -66,17 +71,31 @@ int         game_playturn           (sGame *g, const sGameTurn *t);
 
 
 // static functions declarations:
-
+// game configuration
 static inline
-char *          game_get_name           (sGame *g) { return g->gamename; }
+sGameConf *     game_get_conf           (sGame *g, sGameConf *c) { if(c) { memcpy(c, &g->conf, sizeof(*c)); return c; } else return &g->conf; }
+static inline
+void            game_set_conf           (sGame *g, sGameConf *c) { memcpy(&g->conf, c, sizeof(*c)); }
+static inline   // FIXME: is it interesting to keep the following conf access wrappers?
+char *          game_get_name           (sGame *g) { return g->conf.gamename; }
+static inline
+char *          game_get_playername     (sGame *g, ePlayer p) { return g->conf.playername[p]; }
+static inline
+void            game_set_playername     (sGame *g, ePlayer p, char *name) { strcpy(g->conf.playername[p], name); }
+static inline
+time_t          game_get_totaltime      (sGame *g) { return g->conf.t_total; }
+static inline
+void            game_set_totaltime      (sGame *g, time_t t) { g->conf.t_total=t; }
+static inline
+time_t          game_get_turntime       (sGame *g) { return g->conf.t_turn; }
+static inline
+void            game_set_turntime       (sGame *g, time_t t) { g->conf.t_turn=t; }
+
+// game state
 static inline
 ePlayer         game_get_me             (sGame *g) { return g->me; }
 static inline
 void            game_set_me             (sGame *g, ePlayer p) { g->me=p; }
-static inline
-char *          game_get_playername     (sGame *g, ePlayer p) { return g->playername[p]; }
-static inline
-void            game_set_playername     (sGame *g, ePlayer p, char *name) { strcpy(g->playername[p], name); }
 static inline
 eGameState      game_get_state          (sGame *g) { return g->state; }
 static inline
@@ -85,14 +104,6 @@ static inline
 time_t          game_get_remainingtime  (sGame *g) { return g->t_remaining; }
 static inline
 void            game_set_remainingtime  (sGame *g, time_t t) { g->t_remaining=t; }
-static inline
-time_t          game_get_totaltime      (sGame *g) { return g->t_total; }
-static inline
-void            game_set_totaltime      (sGame *g, time_t t) { g->t_total=t; }
-static inline
-time_t          game_get_turntime       (sGame *g) { return g->t_turn; }
-static inline
-void            game_set_turntime       (sGame *g, time_t t) { g->t_turn=t; }
 
 static inline
 LIST *          game_histo_destroylist  (LIST *l) {

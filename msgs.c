@@ -15,11 +15,25 @@ sMsg last_msg;
 unsigned int last_msg_datasz;
 
 void msgs_handler(int sig, sMsg *msg /* in the shm */, unsigned int datasz, sGame *g) {
+    sGameConf *conf;
+
     memcpy(&last_msg, msg, datasz); // make a copy because out of this handler, the shm may be modified
     datasz-=sizeof(eMsgsTypes); // datasz will only be the size of the payload
     last_msg_datasz=datasz;
 
     switch(msg->type) {
+    case MSG_JOINGAME:
+        conf = game_get_conf(g, NULL);
+        strcpy(conf->playername[P_2], msg->data);
+
+        // prepare and send answer to sender
+        msg->type=MSG_CONFUPDATE;
+        memcpy(msg->data, conf, sizeof(*conf));
+        msg_answer(msg, sizeof(*conf));
+
+        sigmsgunlock(); // if we don't return from this isr, we have to unlock the shm
+        siglongjmp(jumpenv, LJUMP_ISR);    // let's stop what we are doing
+        break;  // never reached
     case MSG_ENDGAME:
         sigmsgunlock(); // if we don't return from this isr, we have to unlock the shm
         siglongjmp(jumpenv, LJUMP_ISR);    // let's stop what we are doing

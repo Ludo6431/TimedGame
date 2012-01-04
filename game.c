@@ -18,7 +18,7 @@ sGame *game_new(sGame *g, const char *fname) {
 
     bzero(g, sizeof(*g));
 
-    strncpy(g->gamename, fname, sizeof(g->gamename));
+    strncpy(g->conf.gamename, fname, sizeof(g->conf.gamename));
 
     return g;
 }
@@ -26,7 +26,7 @@ sGame *game_new(sGame *g, const char *fname) {
 char *game_get_filepath(const sGame *g) {
     static char filepath[256];
 
-    snprintf(filepath, sizeof(filepath), "/tmp/%s.histo", g->gamename);
+    snprintf(filepath, sizeof(filepath), "/tmp/%s.histo", g->conf.gamename);
 
     return filepath;
 }
@@ -115,12 +115,12 @@ int game_histo_load(sGame *g, const char *name) {
     if(!(f=fopen(game_get_filepath(g), "rb")))
         return 1;
 
-    strncpy(g->gamename, name, sizeof(g->gamename));
+    strncpy(g->conf.gamename, name, sizeof(g->conf.gamename));
     g->turns=NULL;
 
     while(fgets(line, sizeof(line), f)) {
-        if(line[0]=='H' && line[1]=='X') {
-            sscanf(line+2, "%s %s %04d%04d", g->playername[0], g->playername[1], (int *)&g->t_total, (int *)&g->t_remaining);
+        if(line[0]=='H' && line[1]=='X') {  // game configuration
+            sscanf(line+2, "%s %s %04d%04d", g->conf.playername[0], g->conf.playername[1], (int *)&g->conf.t_total, (int *)&g->conf.t_turn);
             // TODO check error and return 1
         }
         else if(line[0]=='F' && line[1]=='I' && line[2]=='N') {
@@ -132,9 +132,9 @@ int game_histo_load(sGame *g, const char *name) {
 
             char player[9];
             sscanf(line, "%04d%s %u", (int *)&turn->t_remaining, player, &turn->type); // TODO check error
-            if(!strcmp(player, g->playername[0]))
+            if(!strcmp(player, g->conf.playername[0]))
                 turn->player=P_1;
-            else if(!strcmp(player, g->playername[1]))
+            else if(!strcmp(player, g->conf.playername[1]))
                 turn->player=P_2;
             else {
                 fclose(f);
@@ -158,10 +158,10 @@ int game_histo_save(const sGame *g) {
     if(!(f=fopen(game_get_filepath(g), "wb+")))
         return 1;
 
-    fprintf(f, "HX%-8s %-8s %04u%04u\r\n", g->playername[0], g->playername[1], (unsigned int)g->t_total, (unsigned int)g->t_remaining);
+    fprintf(f, "HX%-8s %-8s %04u%04u\r\n", g->conf.playername[0], g->conf.playername[1], (unsigned int)g->conf.t_total, (unsigned int)g->conf.t_turn);
 
     while(turns) {
-        fprintf(f, "%04u%s %u\r\n", (unsigned int)((sGameTurn *)turns->data)->t_remaining, g->playername[((sGameTurn *)turns->data)->player], ((sGameTurn *)turns->data)->type);
+        fprintf(f, "%04u%s %u\r\n", (unsigned int)((sGameTurn *)turns->data)->t_remaining, g->conf.playername[((sGameTurn *)turns->data)->player], ((sGameTurn *)turns->data)->type);
 
         turns=turns->next;
     }
