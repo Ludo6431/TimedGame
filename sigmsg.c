@@ -5,7 +5,7 @@
 #include <pthread.h>    // pthread_*
 #include <signal.h> // signal, kill
 #include <errno.h>  // errno
-#include <string.h> // memcpy
+#include <string.h> // memcpy, memmove
 
 #include "sigmsg.h"
 
@@ -208,7 +208,9 @@ int sigmsgans(const void *msgp, size_t msgsz) {    // answer to a message on the
 
     _shm->status |= SHM_ANS;    // tell the sender we send him back an answer
 
-    memcpy(_shm->tab, msgp, msgsz);
+    // we may use the provided data in the signal handler to store the data, in this case data could overlap => we use memmove
+    if(_shm->tab != msgp)
+        memmove(_shm->tab, msgp, msgsz);
     _shm->tablen=msgsz;
 
     return 0;

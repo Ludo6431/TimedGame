@@ -12,32 +12,34 @@
 #include "msgs.h"
 
 sMsg last_msg;
-unsigned int last_msg_len;
+unsigned int last_msg_datasz;
 
-void msgs_handler(int sig, sMsg *msg /* in the shm */, unsigned int msglen, sGame *g) {
-    memcpy(&last_msg, msg, msglen); // make a copy because out of this handler, the shm may be modified
-    last_msg_len=msglen;
+void msgs_handler(int sig, sMsg *msg /* in the shm */, unsigned int datasz, sGame *g) {
+    memcpy(&last_msg, msg, datasz); // make a copy because out of this handler, the shm may be modified
+    datasz-=sizeof(eMsgsTypes); // datasz will only be the size of the payload
+    last_msg_datasz=datasz;
+
     switch(msg->type) {
     case MSG_ENDGAME:
         sigmsgunlock(); // if we don't return from this isr, we have to unlock the shm
         siglongjmp(jumpenv, LJUMP_ISR);    // let's stop what we are doing
-        break;
+        break;  // never reached
     default:
         fprintf(stderr, "Unhandled message %d\n", msg->type);
         break;
     }
 }
 
-int msg_init(char *path, int msgflg) {
+int msg_init(char *path, int msgflg, sGame *g) {
     key_t key;
 
     if((key=ftok(path, 0))==(key_t)-1)
         exitOnErrSyst("ftok", NULL);
 
     if(sigmsginit(key, msgflg)==-1)
-        exitOnErrSyst("sigmsgget", NULL);
+        exitOnErrSyst("sigmsginit", NULL);
 
-    if(sigmsgreg(SIGUSR1, (sigmsghnd)msgs_handler, NULL)==-1)
+    if(sigmsgreg(SIGUSR1, (sigmsghnd)msgs_handler, (void *)g)==-1)
         exitOnErrSyst("sigmsgreg", NULL);
 
     return 0;

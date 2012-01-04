@@ -1,8 +1,8 @@
 #ifndef _MSGS_H
 #define _MSGS_H
 
-#include "game.h"
-#include "sigmsg.h"
+#include "game.h"   // sGame
+#include "sigmsg.h" // MAX_SIGMSG_SZ
 
 typedef enum {
     MSG_JOINGAME,
@@ -13,13 +13,13 @@ typedef enum {
 typedef struct {
     eMsgsTypes type;
 
-    char data[MAX_SIGMSG_SZ-sizeof(eMsgsTypes)];
+    char data[MAX_SIGMSG_SZ-sizeof(eMsgsTypes)];    // payload
 } sMsg;
 
 extern sMsg last_msg;
 extern unsigned int last_msg_len;
 
-int msg_init        (char *path, int msgflg);
+int msg_init        (char *path, int msgflg, sGame *g);
 
 int msg_send        (sMsg *msg, unsigned int datasz);
 int msg_transfer    (sMsg *msg, unsigned int *datasz);
