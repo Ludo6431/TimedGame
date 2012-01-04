@@ -5,7 +5,7 @@
 #include <pthread.h>    // pthread_*
 #include <signal.h> // signal, kill
 #include <errno.h>  // errno
-#include <string.h> // memcpy, memmove
+#include <string.h> // memcpy, memmove, memset
 
 #include "sigmsg.h"
 
@@ -117,6 +117,9 @@ void _dispatch(int sig) {
 }
 
 int sigmsgreg(int sig, sigmsghnd func, void *userp) {  // register a function which will be called on a received message
+    struct sigaction act;
+    memset((void *)&act, '\0', sizeof(struct sigaction));
+
     if(!_shm) {
         errno=ENXIO;
         return -1;
@@ -129,7 +132,9 @@ int sigmsgreg(int sig, sigmsghnd func, void *userp) {  // register a function wh
     _userp=userp;
     _userh=func;
 
-    signal(sig, _dispatch);
+    act.sa_handler=_dispatch;
+    act.sa_flags=SA_RESTART;
+    sigaction(sig, &act, NULL);
 
     return 0;
 }

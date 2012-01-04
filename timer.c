@@ -1,6 +1,7 @@
 #include <setjmp.h> // sig*jmp
 #include <unistd.h> // alarm
 #include <signal.h> // signal
+#include <string.h> // memset
 
 #include "timer.h"
 
@@ -26,6 +27,9 @@ void _handler(int sig) {
 
 int timer_start(int s, sigjmp_buf *env, int timer_expired_code, timer_handler f, void *userp) {
 // when the timer expires, there will be a long jump to env with this timer_expired_code
+    struct sigaction act;
+    memset((void *)&act, '\0', sizeof(struct sigaction));
+
     _timer=s;
     _uf = f;
     _up = userp;
@@ -35,7 +39,9 @@ int timer_start(int s, sigjmp_buf *env, int timer_expired_code, timer_handler f,
     if(_uf)
         _uf(SIGALRM, _timer, _up);
 
-    signal(SIGALRM, _handler);
+    act.sa_handler=_handler;
+    act.sa_flags=SA_RESTART;
+    sigaction(SIGALRM, &act, NULL);
 
     alarm(1);
 
