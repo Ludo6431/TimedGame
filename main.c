@@ -10,6 +10,7 @@
 int main(int argc, char *argv[]) {
     eMenuState MenuState=M_MAIN;
     sGame game; // partie en cours
+    sMsg msg;
     char buf[256];
     char *choix;
 
@@ -79,7 +80,8 @@ int main(int argc, char *argv[]) {
         case LJUMP_TIMER:   // timer expired
             // TODO afficher message erreur
 
-            msg_send(MSG_ENDGAME, "", 0);   // let's tell the other process we're done
+            msg.type=MSG_ENDGAME;
+            msg_send(&msg, 0 /* no additionnal payload */);   // let's tell the other process we're done
 
             retour_menu(&game);
             MenuState=M_MAIN;

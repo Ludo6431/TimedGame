@@ -44,7 +44,7 @@ int nouvelle_partie(sGame *g) {
     game_histo_save(g);
 
     /* création canal de communication */
-    if(msg_init(game_get_filepath(g), 0600|IPC_CREAT|IPC_EXCL)==-1)
+    if(msg_init(game_get_filepath(g), 0600|IPC_CREAT|IPC_EXCL, (void *)g)==-1)
         exitOnErrSyst("msg_init", NULL);
 
     /* on peut démarrer le timer d'attente de connexion */
@@ -89,7 +89,7 @@ int connexion(sGame *g) {
     game_set_playername(g, P_2, tmp);
 
     // ouverture de la mémoire partagée existante
-    if(msg_init(game_get_filepath(g), 0600)==-1)
+    if(msg_init(game_get_filepath(g), 0600, g)==-1)
         exitOnErrSyst("msg_init", NULL);
 
     return 0;
