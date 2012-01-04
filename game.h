@@ -15,7 +15,6 @@ typedef enum {
 
 typedef enum {
     GS_INIT,    // initial state
-    GS_WAITPLAYER,
     GS_TURN,    // turn in progress (see ePlayer to know which player turn it is)
     GS_WIN      // a player won (see ePlayer to know which one won)
 } eGameState;
