@@ -31,9 +31,7 @@ void msgs_handler(int sig, sMsg *msg /* in the shm */, unsigned int datasz, sGam
         memcpy(msg->data, conf, sizeof(*conf));
         msg_answer(msg, sizeof(*conf));
 
-        sigmsgunlock(); // if we don't return from this isr, we have to unlock the shm
-        siglongjmp(jumpenv, LJUMP_ISR);    // let's stop what we are doing
-        break;  // never reached
+    case MSG_GAMETURN:
     case MSG_ENDGAME:
         sigmsgunlock(); // if we don't return from this isr, we have to unlock the shm
         siglongjmp(jumpenv, LJUMP_ISR);    // let's stop what we are doing

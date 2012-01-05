@@ -173,9 +173,15 @@ int game_histo_save(const sGame *g) {
 }
 
 int game_playturn(sGame *g, const sGameTurn *t) {
-    g->turns = list_append(g->turns, t);    // push the turn on the stack
+    if(g->state!=GS_INIT && g->state!=GS_TURN)
+        return 1;
 
-    g->player^=1;   // change player
+    g->state = GS_TURN;
+
+    g->turns = list_append(g->turns, xmemdup((void *)t, sizeof(*t)));    // push the turn on the stack
+
+    if(t->type==T_OK)
+        g->player^=1;   // change player
 
     return 0;
 }

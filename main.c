@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
         printf("\x1b[2J\x1b[0;0H");
 
         // TODO: flush the input buffer before printing the new menu
+        // TODO: prévoir une zone à l'écran (avant ou après le menu) dans laquelle on pourra afficher des messages
 
         if(!(choix=menu_run(MenuState, buf, sizeof(buf))) || !strlen(choix))
             continue;   // loop
@@ -31,7 +32,9 @@ int main(int argc, char *argv[]) {
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
             connexion(&game);
-            MenuState=((game_get_player(&game)==P_1)?M_MYTURN:M_HISTURN);
+            MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
+//            if(MenuState==M_MYTURN)
+                // TODO: timer_start(conf->t_turn...
             break;
         case '3':   // M_MAIN, "Charger une partie sauvegardée"
 //            reprise_partie_sauvegarde(&game);
@@ -52,7 +55,9 @@ int main(int argc, char *argv[]) {
             break;
         case '6':   // M_PAUSED, "Reprendre"
 //            reprendre(&game);
-            MenuState=((game_get_player(&game)==P_1)?M_MYTURN:M_HISTURN);
+            MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
+//            if(MenuState==M_MYTURN)
+                // TODO: timer_resume
             break;
         case '7':   // M_MYTURN|M_HISTURN|M_PAUSED, "Visualiser l'historique"
 //            afficher_historique(&game);
@@ -78,9 +83,11 @@ int main(int argc, char *argv[]) {
                 MenuState=M_MAIN;
             }
             break;
-//            jouer_coup(&game);
         case '/':   // M_MYTURN, "Jouer un coup"
-            MenuState=((game_get_player(&game)==P_1)?M_MYTURN:M_HISTURN);
+            jouer_coup(&game, choix+1);
+            MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
+//            if(MenuState==M_MYTURN)
+                // TODO: timer_start(conf->t_turn...
             break;
         }
 
@@ -100,7 +107,19 @@ int main(int argc, char *argv[]) {
         case LJUMP_ISR: // the other process ask me to do something
             switch(last_msg.type) {
             case MSG_JOINGAME:
-                MenuState=((game_get_player(&game)==P_1)?M_MYTURN:M_HISTURN);
+                timer_stop();   // ok someone is here, we can stop the connection wait timer
+                MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
+//                if(MenuState==M_MYTURN)
+                    // TODO: timer_start(conf->t_turn...
+                break;
+            case MSG_GAMETURN:
+                game_playturn(&game, (sGameTurn *)last_msg.data);
+                if(game_get_state(&game)==GS_WIN)
+                    MenuState=M_MAIN;
+                else
+                    MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
+//                    if(MenuState==M_MYTURN)
+                        // TODO: timer_start(conf->t_turn...
                 break;
             case MSG_ENDGAME:   // the other process quit
                 retour_menu(&game); // we quit aswell

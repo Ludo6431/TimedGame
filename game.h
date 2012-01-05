@@ -36,6 +36,7 @@ typedef struct {    // define a turn of the game
 typedef struct {
     char gamename[64];  // game name
     char playername[2][9];  // players names
+    ePlayer firstplayer;    // the player starting to play
     time_t t_total;
     time_t t_turn;
 } sGameConf;
@@ -75,20 +76,6 @@ static inline
 sGameConf *     game_get_conf           (sGame *g, sGameConf *c) { if(c) { memcpy(c, &g->conf, sizeof(*c)); return c; } else return &g->conf; }
 static inline
 void            game_set_conf           (sGame *g, sGameConf *c) { memcpy(&g->conf, c, sizeof(*c)); }
-static inline   // FIXME: is it interesting to keep the following conf access wrappers?
-char *          game_get_name           (sGame *g) { return g->conf.gamename; }
-static inline
-char *          game_get_playername     (sGame *g, ePlayer p) { return g->conf.playername[p]; }
-static inline
-void            game_set_playername     (sGame *g, ePlayer p, char *name) { strcpy(g->conf.playername[p], name); }
-static inline
-time_t          game_get_totaltime      (sGame *g) { return g->conf.t_total; }
-static inline
-void            game_set_totaltime      (sGame *g, time_t t) { g->conf.t_total=t; }
-static inline
-time_t          game_get_turntime       (sGame *g) { return g->conf.t_turn; }
-static inline
-void            game_set_turntime       (sGame *g, time_t t) { g->conf.t_turn=t; }
 
 // game state
 static inline
@@ -99,6 +86,8 @@ static inline
 eGameState      game_get_state          (sGame *g) { return g->state; }
 static inline
 ePlayer         game_get_player         (sGame *g) { return g->player; }
+static inline
+void            game_set_player         (sGame *g, ePlayer p) { g->player=p; }
 static inline
 time_t          game_get_remainingtime  (sGame *g) { return g->t_remaining; }
 static inline

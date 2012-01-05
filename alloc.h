@@ -51,5 +51,15 @@ static inline char *xstrdup(const char *s) {
     return ret;
 }
 
+static inline void *xmemdup(const void *s, size_t n) {
+    void *ret=malloc(n);
+    if(n && !ret)
+        exitOnErrSyst("memdup", NULL);
+
+    memcpy(ret, s, n);
+
+    return ret;
+}
+
 #endif
 

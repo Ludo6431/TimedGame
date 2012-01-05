@@ -17,6 +17,7 @@
 #include "menu_functions.h"
 
 int nouvelle_partie(sGame *g) {
+    sGameConf *conf;
     char tmp[256];
     time_t ttmp;
 
@@ -24,21 +25,24 @@ int nouvelle_partie(sGame *g) {
     printf("Nom de la partie       : ");
     readStdin(tmp, sizeof(tmp));
     game_new(g, tmp); // game_new intialise le jeu
+    conf=game_get_conf(g, NULL);
 
     printf("Vous êtes le joueur n°1\n");
     printf("Votre pseudo           : ");
     readStdin(tmp, sizeof(tmp));
-    game_set_playername(g, P_1, tmp);
+    strcpy(conf->playername[P_1], tmp);
+
+    // TODO: demander qui commence la partie et modifier conf->firstplayer
 
     printf("Durée de la partie (s) : ");
     readStdin(tmp, sizeof(tmp));
-    game_set_totaltime(g, (time_t)atoi(tmp));
+    ttmp = (time_t)atoi(tmp);
+    conf->t_total=ttmp;
+    game_set_remainingtime(g, ttmp);
 
     printf("Durée par coup (s)     : ");
     readStdin(tmp, sizeof(tmp));
-    ttmp = atoi(tmp);
-    game_set_turntime(g, ttmp);
-    game_set_remainingtime(g, ttmp);
+    conf->t_turn=(time_t)atoi(tmp);
 
     /* création fichier .histo vide pour créer la mémoire partagée */
     game_histo_save(g);
@@ -106,10 +110,13 @@ int connexion(sGame *g) {
         sGameConf *conf = (sGameConf *)msg.data;
 
         game_set_conf(g, conf);    // configuration synchronized
+        game_set_player(g, conf->firstplayer);
 
+        // FIXME: attention, ceci est recouvert par le menu
         printf("Configuration du jeu :\n");
         printf("Joueur 1 : %s\n", conf->playername[P_1]);
         printf("Joueur 2 : %s\n", conf->playername[P_2]);
+        printf("Le joueur %d commence\n", conf->firstplayer+1);
         printf("Durée de la partie : %us\n", (unsigned int)conf->t_total);
         printf("Durée par coup     : %us\n", (unsigned int)conf->t_turn);
     }
@@ -121,20 +128,61 @@ int connexion(sGame *g) {
     return 0;
 }
 
-#if 0
-void reprise_partie_sauvegarde(void) {
-
-
+void reprise_partie_sauvegarde(sGame *g) {
+    // TODO
 }
-/* a mettre dans game.c ..?*/
-void alarm_connexion(int numSig) {
 
-    pthread_mutex_lock(adresse->matt);
-    pthread_cond_signal(adresse->catt);
-    pthread_mutex_lock(adresse->matt);
-
+void sauvegarder(sGame *g) {
+    // TODO
 }
-#endif
+
+void pause(sGame *g) {
+    // TODO
+}
+
+void reprendre(sGame *g) {
+    // TODO
+}
+
+void afficher_historique(sGame *g) {
+    // TODO
+}
+
+void jouer_coup(sGame *g, char *s) {
+    sGameTurn turn;
+    sMsg msg;
+
+    turn.player=game_get_player(g);
+    turn.t_remaining=game_get_remainingtime(g);
+
+    if(!strcasecmp(s, "normal") || !strcasecmp(s, ":)"))
+        turn.type=T_OK;
+    else if(!strcasecmp(s, "gagne") || !strcasecmp(s, ":D"))
+        turn.type=T_WIN;
+    else
+        turn.type=T_INVALID;
+
+    // FIXME: attention, ceci est recouvert par le menu
+    printf("%s : ", game_get_conf(g, NULL)->playername[turn.player]);
+
+    switch(turn.type) {
+    case T_OK:
+        printf("coup normal :)\n");
+        break;
+    case T_INVALID:
+        printf("coup invalide :x\n");
+        break;
+    case T_WIN:
+        printf("coup gagnant :D\n");
+        break;
+    }
+
+    game_playturn(g, &turn);
+
+    msg.type=MSG_GAMETURN;
+    memcpy(msg.data, &turn, sizeof(turn));
+    msg_send(&msg, sizeof(turn));
+}
 
 void retour_menu(sGame *g) {
     msg_deinit(!g->me);  // destroy if we are the host of the game
