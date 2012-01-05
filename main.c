@@ -40,6 +40,9 @@ int main(int argc, char *argv[]) {
         case '4':   // M_INGAME|M_PAUSED, "Stopper en sauvegardant" -> retour au menu principal
 //            sauvegarder(&game);
 
+            msg.type=MSG_ENDGAME;
+            msg_send(&msg, 0);
+
             retour_menu(&game);
             MenuState=M_MAIN;
             break;
@@ -58,6 +61,9 @@ int main(int argc, char *argv[]) {
         case '8':   // M_INGAME|M_PAUSED, "Stopper en visualisant l'historique" -> retour au menu principal (sans sauvegarder)
 //            afficher_historique(&game);
 
+            msg.type=MSG_ENDGAME;
+            msg_send(&msg, 0);
+
             retour_menu(&game);
             MenuState=M_MAIN;
         case '9':   // M_*
@@ -65,6 +71,9 @@ int main(int argc, char *argv[]) {
                 exit(0);
             }
             else {  // M_WAIT|M_INGAME|M_PAUSED, "Retour au menu principal" (sans sauvegarder)
+                msg.type=MSG_ENDGAME;
+                msg_send(&msg, 0);
+
                 retour_menu(&game);
                 MenuState=M_MAIN;
             }
