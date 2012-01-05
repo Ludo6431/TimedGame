@@ -17,7 +17,8 @@ int main(int argc, char *argv[]) {
     while(1) {
         printf("\x1b[2J\x1b[0;0H");
 
-        // TODO: clear the input buffer
+        // TODO: flush the input buffer before printing the new menu
+
         if(!(choix=menu_run(MenuState, buf, sizeof(buf))) || !strlen(choix))
             continue;   // loop
 
@@ -100,7 +101,7 @@ int main(int argc, char *argv[]) {
             }
             break;
         default:
-fprintf(stderr, "unhandled long jump\n");
+            fprintf(stderr, "unhandled long jump\n");
             break;
         }
     }   // end while

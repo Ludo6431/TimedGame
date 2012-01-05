@@ -3,7 +3,6 @@
 
 #include <setjmp.h>
 
-// DRAFT
 typedef void (*timer_handler)(int sig, int secs, void *userp);
 
 int timer_start(int s, sigjmp_buf *env, int timer_expired_code, timer_handler f, void *userp);

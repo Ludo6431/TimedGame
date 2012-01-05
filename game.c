@@ -1,9 +1,8 @@
 #include <stdio.h>  // f*
 #include <sys/types.h>  // DIR
 #include <dirent.h> // opendir, readdir, struct dirent, closedir
-#include <string.h> // strcasecmp
+#include <string.h> // strcasecmp, memset
 #include <errno.h>  // errno
-#include <strings.h> // bzero
 
 #include "list.h"   // LIST
 #include "tools.h"  // exitOnErrSyst
@@ -16,7 +15,7 @@ sGame *game_new(sGame *g, const char *fname) {
     if(!g)
         g=xmalloc(sizeof(*g));
 
-    bzero(g, sizeof(*g));
+    memset((void *)g, '\0', sizeof(*g));
 
     strncpy(g->conf.gamename, fname, sizeof(g->conf.gamename));
 

@@ -80,9 +80,9 @@ int connexion(sGame *g) {
     printf("Entrez le nom de la partie que vous voulez rejoindre :\n");
     readStdin(tmp, sizeof(tmp));
     game_new(g, tmp); // game_new intialise le jeu
-    // TODO choisir une partie dans la liste avec son numéro ?
+    // TODO: choisir une partie dans la liste avec son numéro ?
 
-    /*récupération des informations sur la partie et initialisation de g*/
+    /* récupération des informations sur la partie et initialisation de g */
     printf("Vous êtes le joueur n°2\n");
     game_set_me(g, P_2);
 
@@ -114,7 +114,7 @@ int connexion(sGame *g) {
         printf("Durée par coup     : %us\n", (unsigned int)conf->t_turn);
     }
     else {
-        // TODO: return to menu nicely
+        // TODO: return to menu nicely or ask the config
         fprintf(stderr, "we didn't get the config\n");
     }
 

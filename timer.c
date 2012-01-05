@@ -8,7 +8,7 @@
 static int _timer;
 static timer_handler _uf;
 static void *_up;
-sigjmp_buf *_timer_env=NULL;
+static sigjmp_buf *_timer_env=NULL;
 static int _timer_expired_code=0;
 
 void _handler(int sig) {
