@@ -1,6 +1,6 @@
 /************************** menu.c ************************/
 /* Ce fichier comporte :
-- la fonction d'affichage du menu qui récupère aussi le choix de l'utilisateur
+- la fonction d'affichage du menu qui rÃ©cupÃ¨re aussi le choix de l'utilisateur
 */
 
 #include <stdlib.h>
@@ -26,8 +26,8 @@ struct {
     unsigned int flags;
 } menu[]={
     {'1', "Nouvelle partie",                        M_MAIN                             },
-    {'2', "Connexion à une partie",                 M_MAIN                             },
-    {'3', "Charger une partie sauvegardée",         M_MAIN                             },
+    {'2', "Connexion Ã  une partie",                 M_MAIN                             },
+    {'3', "Charger une partie sauvegardÃ©e",         M_MAIN                             },
     {'4', "Stopper en sauvegardant",                                M_INGAME| M_PAUSED },
     {'5', "Mettre en pause",                                        M_INGAME           },
     {'6', "Reprendre",                                                        M_PAUSED },
@@ -38,7 +38,7 @@ struct {
     {'/', "Jouer un coup",                                          M_INGAME           },
 };
 
-// affiche le menu pour un état de menu donné, récupère une ligne tapée au clavier par l'utilisateur et vérifie que le choix est possible
+// affiche le menu pour un Ã©tat de menu donnÃ©, rÃ©cupÃ¨re une ligne tapÃ©e au clavier par l'utilisateur et vÃ©rifie que le choix est possible
 char *menu_run(eMenuState st, char *buf, unsigned int size) {
     char *ret;
     int i;
