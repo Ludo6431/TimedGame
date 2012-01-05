@@ -31,13 +31,13 @@ int main(int argc, char *argv[]) {
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
             connexion(&game);
-            MenuState=M_INGAME;
+            MenuState=((game_get_player(&game)==P_1)?M_MYTURN:M_HISTURN);
             break;
         case '3':   // M_MAIN, "Charger une partie sauvegardée"
 //            reprise_partie_sauvegarde(&game);
             MenuState=M_WAIT;
             break;
-        case '4':   // M_INGAME|M_PAUSED, "Stopper en sauvegardant" -> retour au menu principal
+        case '4':   // M_MYTURN|M_HISTURN|M_PAUSED, "Stopper en sauvegardant" -> retour au menu principal
 //            sauvegarder(&game);
 
             msg.type=MSG_ENDGAME;
@@ -46,19 +46,19 @@ int main(int argc, char *argv[]) {
             retour_menu(&game);
             MenuState=M_MAIN;
             break;
-        case '5':   // M_INGAME, "Mettre en pause"
+        case '5':   // M_MYTURN|M_HISTURN, "Mettre en pause"
 //            pause(&game);
             MenuState=M_PAUSED;
             break;
         case '6':   // M_PAUSED, "Reprendre"
 //            reprendre(&game);
-            MenuState=M_INGAME;
+            MenuState=((game_get_player(&game)==P_1)?M_MYTURN:M_HISTURN);
             break;
-        case '7':   // M_INGAME|M_PAUSED, "Visualiser l'historique"
+        case '7':   // M_MYTURN|M_HISTURN|M_PAUSED, "Visualiser l'historique"
 //            afficher_historique(&game);
             // on ne change pas d'état
             break;
-        case '8':   // M_INGAME|M_PAUSED, "Stopper en visualisant l'historique" -> retour au menu principal (sans sauvegarder)
+        case '8':   // M_MYTURN|M_HISTURN|M_PAUSED, "Stopper en visualisant l'historique" -> retour au menu principal (sans sauvegarder)
 //            afficher_historique(&game);
 
             msg.type=MSG_ENDGAME;
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
             if(MenuState==M_MAIN) { // M_MAIN, "Quitter"
                 exit(0);
             }
-            else {  // M_WAIT|M_INGAME|M_PAUSED, "Retour au menu principal" (sans sauvegarder)
+            else {  // M_WAIT|M_MYTURN|M_HISTURN|M_PAUSED, "Retour au menu principal" (sans sauvegarder)
                 msg.type=MSG_ENDGAME;
                 msg_send(&msg, 0);
 
@@ -78,8 +78,9 @@ int main(int argc, char *argv[]) {
                 MenuState=M_MAIN;
             }
             break;
-        case '/':   // M_INGAME, "Jouer un coup"
 //            jouer_coup(&game);
+        case '/':   // M_MYTURN, "Jouer un coup"
+            MenuState=((game_get_player(&game)==P_1)?M_MYTURN:M_HISTURN);
             break;
         }
 
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
         case LJUMP_ISR: // the other process ask me to do something
             switch(last_msg.type) {
             case MSG_JOINGAME:
-                MenuState=M_INGAME;
+                MenuState=((game_get_player(&game)==P_1)?M_MYTURN:M_HISTURN);
                 break;
             case MSG_ENDGAME:   // the other process quit
                 retour_menu(&game); // we quit aswell
