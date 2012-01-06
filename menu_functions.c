@@ -6,6 +6,8 @@
 #include <errno.h>  // errno
 #include <sys/types.h>
 #include <sys/ipc.h>    // IPC_*
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "tools.h"  // readStdin, exitOnErrSyst
 #include "game.h"   // game_*
@@ -134,7 +136,7 @@ void reprendre(sGame *g) {
 
 void afficher_historique(sGame *g) {
 
-    int pid=0,buflenght=0;tube[2];
+    int pid=0,buflenght=0,tube[2];
     int status; /*pour code retour wait() */
     char buf[150];
     LIST *turns=g->turns;
@@ -192,12 +194,9 @@ void afficher_historique(sGame *g) {
     
     
     wait(&status);
-    
-    return (0);    
+     
 }
 
-
-}
 
 void jouer_coup(sGame *g, char *s) {
     sGameTurn turn;
