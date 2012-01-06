@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
             retour_menu(&game);
             MenuState=M_MAIN;
             break;
-        case '5':   // M_MYTURN|M_HISTURN, "Mettre en pause"
+        case '5':   // M_MYTURN, "Mettre en pause"
 //            pause(&game);
             MenuState=M_PAUSED;
             break;

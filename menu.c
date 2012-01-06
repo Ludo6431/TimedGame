@@ -30,7 +30,7 @@ struct {
     {'2', "Connexion à une partie",                 M_MAIN                                        },
     {'3', "Charger une partie sauvegardée",         M_MAIN                                        },
     {'4', "Stopper en sauvegardant",                                M_MYTURN| M_HISTURN| M_PAUSED },
-    {'5', "Mettre en pause",                                        M_MYTURN| M_HISTURN           },
+    {'5', "Mettre en pause",                                        M_MYTURN                      },
     {'6', "Reprendre",                                                                   M_PAUSED },
     {'7', "Visualiser l'historique",                                M_MYTURN| M_HISTURN| M_PAUSED },
     {'8', "Stopper en visualisant l'historique",                    M_MYTURN| M_HISTURN| M_PAUSED },
