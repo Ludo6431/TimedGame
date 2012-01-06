@@ -51,18 +51,6 @@ int nouvelle_partie(sGame *g) {
     if(msg_init(game_get_filepath(g), 0600|IPC_CREAT|IPC_EXCL, (void *)g)==-1)
         exitOnErrSyst("msg_init", NULL);
 
-    /* on peut démarrer le timer d'attente de connexion */
-    void _update(int sig, int t, void *data) {
-        printf("\x1b[s\x1b[0;0H");
-
-        printf("Il te reste %02d secondes", t);
-
-        printf("\x1b[u");
-        fflush(stdout);
-    }
-
-    timer_start(30, &jumpenv, LJUMP_TIMER, _update, NULL);
-
     return 0;
 }
 
