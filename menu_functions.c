@@ -133,7 +133,70 @@ void reprendre(sGame *g) {
 }
 
 void afficher_historique(sGame *g) {
-    // TODO
+
+    int pid=0,buflenght=0;tube[2];
+    int status; /*pour code retour wait() */
+    char buf[150];
+    LIST *turns=g->turns;
+
+
+/* Creation du tube */
+    if(pipe(tube)==-1){
+        exitOnErrSyst("pipe","creation du pipe impossible");
+    }
+
+/*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
+    close(tube[0]);
+    
+    
+/*ecriture dans le tube des données de la partie*/
+    sprintf(buf, "Nom du Joueur 1 : %-8s \nNom du Joueur 2 : %-8s\n Temps total : %04u \n Temps par tour : %04u\r\n", g->conf.playername[0], g->conf.playername[1], (unsigned int)g->conf.t_total, (unsigned int)g->conf.t_turn);
+    buflenght=strlen(buf);
+	//ecriture des donnees dans le tube
+     if((write(tube[1],buf,buflenght))==-1){
+                exitOnErrSyst("write","ecriture dans le tube");
+     }
+
+    while(turns) {
+        sprintf(buf, "%04u%s %u\r\n", (unsigned int)((sGameTurn *)turns->data)->t_remaining, g->conf.playername[((sGameTurn *)turns->data)->player], ((sGameTurn *)turns->data)->type);
+	buflenght=strlen(buf);
+//ecriture des donnees dans le tube
+     	if((write(tube[1],buf,buflenght))==-1){
+                exitOnErrSyst("write","ecriture dans le tube");
+     	}
+
+        turns=turns->next;
+    }
+
+
+    if((pid=fork())==-1){
+        exitOnErrSyst("fork","creation fils");
+    }
+    
+    if(pid==0){
+        /*Code du fils*/
+        
+        /*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
+        close(tube[1]);
+        close(0);//pour pouvoir recopier tube[0]
+        dup(tube[0]);  
+        close(tube[0]);
+        
+        /* lecture donnees du tube, ouverture du terminal et affichage*/
+      /* FIXME  remplacer xxx par entrée standard .. possible avec less ? ou creer un petit programme qui.. affiche simplement ce qui reçoit à l'entrée standard ?*/
+
+	system("xterm -e less XXX 1"); 
+    
+        exit(0);
+    }
+    
+    
+    wait(&status);
+    
+    return (0);    
+}
+
+
 }
 
 void jouer_coup(sGame *g, char *s) {
