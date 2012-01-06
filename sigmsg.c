@@ -147,6 +147,10 @@ inline int _sigmsgsend(int sig, const void *msgp, size_t msgsz) {
 
     _shm->status|=SHM_BUSY;
     _shm->dest=(_shm->pids[0]==getpid())?_shm->pids[1]:_shm->pids[0];   // TODO: check this variable
+    if(!_shm->dest) {
+        errno=ENXIO;
+        return -1;
+    }
 
     memcpy(_shm->tab, msgp, msgsz);
     _shm->tablen=msgsz;

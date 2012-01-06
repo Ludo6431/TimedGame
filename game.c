@@ -180,6 +180,9 @@ int game_playturn(sGame *g, const sGameTurn *t) {
 
     g->turns = list_append(g->turns, xmemdup((void *)t, sizeof(*t)));    // push the turn on the stack
 
+    if(t->type==T_WIN)
+        g->state=GS_WIN;
+
     if(t->type==T_OK)
         g->player^=1;   // change player
 

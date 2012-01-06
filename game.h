@@ -5,6 +5,7 @@
 
 #include <string.h> // strcpy
 #include <stdlib.h> // free
+#include <time.h>   // time_t
 
 #include "list.h"   // LIST, list_*
 

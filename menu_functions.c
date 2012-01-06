@@ -185,6 +185,8 @@ void jouer_coup(sGame *g, char *s) {
 }
 
 void retour_menu(sGame *g) {
-    msg_deinit(!g->me);  // destroy if we are the host of the game
+//    unlink()
+
+    msg_deinit(!game_get_me(g));  // destroy if we are the host of the game
 }
 

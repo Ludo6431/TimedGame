@@ -85,9 +85,12 @@ int main(int argc, char *argv[]) {
             break;
         case '/':   // M_MYTURN, "Jouer un coup"
             jouer_coup(&game, choix+1);
-            MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
-//            if(MenuState==M_MYTURN)
-                // TODO: timer_start(conf->t_turn...
+            if(game_get_state(&game)==GS_WIN) {
+                retour_menu(&game);
+                MenuState=M_MAIN;
+            }
+            else
+                MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
             break;
         }
 
@@ -114,8 +117,10 @@ int main(int argc, char *argv[]) {
                 break;
             case MSG_GAMETURN:
                 game_playturn(&game, (sGameTurn *)last_msg.data);
-                if(game_get_state(&game)==GS_WIN)
+                if(game_get_state(&game)==GS_WIN) {
+                    retour_menu(&game);
                     MenuState=M_MAIN;
+                }
                 else
                     MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
 //                    if(MenuState==M_MYTURN)
