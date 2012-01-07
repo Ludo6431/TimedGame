@@ -120,15 +120,53 @@ int connexion(sGame *g) {
 
 void reprise_partie_sauvegarde(sGame *g) {
     // TODO
+
+    char tmp[256];
+    unsigned int utmp;
+    LIST *l, *ltmp;
+    sMsg msg;
+    int comp1=1,comp2=2;
+
+    //choix de la partie sauvegardée
+    printf("Parties ouvertes :\n");
+    ltmp=l=game_histo_getlist();
+    while(ltmp) {
+        printf("\t%s\n", (char *)ltmp->data);
+        // TODO vérifier que les parties sont en cours
+
+        ltmp=ltmp->next;
+    }
+
+    printf("Entrez le nom de la partie que vous voulez rejoindre :\n");
+    readStdin(tmp, sizeof(tmp));
+
+    if(!game_histo_load(g,tmp){
+	exitOnErrSyst("game_histo_load", NULL);
+    }
+    //FIXME empecher les autres de pouvoir ouvrir la meme sauvegarde
+    //Celui qui charge la partie choisit entre J1 et J2
+    while(comp1!=0 || comp2!=0){
+        printf("Entrez le nom du joueur que vous étiez : %s (J1) ou %s (J2) \n"g->conf.playername[0],g->conf.playername[1]);
+        readStdin(tmp, sizeof(tmp));
+        comp1=strncmp(tmp,g->conf.playername[0],8);
+        comp2=strncmp(tmp,g->conf.playername[1],8);
+    }
+    //TODO
+    /* ouverture mem partagée et canal de communication */
+
+    
 }
 
 void sauvegarder(sGame *g) {
-    // TODO
+
+	if(!game_histo_save(g)){
+		exitOnErrSyst("game_histo_save", NULL);
+	}
 }
 
-void pause(sGame *g) {
+/*void pause(sGame *g) {
     // TODO
-}
+}*/
 
 void reprendre(sGame *g) {
     // TODO
@@ -187,8 +225,8 @@ void afficher_historique(sGame *g) {
         /* lecture donnees du tube, ouverture du terminal et affichage*/
       /* FIXME  remplacer xxx par entrée standard .. possible avec less ? ou creer un petit programme qui.. affiche simplement ce qui reçoit à l'entrée standard ?*/
 
-	system("xterm -e less XXX 1"); 
-    
+	//system("xterm -e less XXX 1"); 
+	system("xterm");     
         exit(0);
     }
     

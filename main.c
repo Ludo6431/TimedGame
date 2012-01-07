@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
             connexion(&game);
+	    //FIXME si on se connecte a une partie sauvegardée qui vient d'être re-ouverte, il faut faire en sorte d'imposer au joueur qui se connecte son role ( J1 ou J2), car celui qui a re-ouvert la partie a choisi qui il était.
             MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
 
             timer_glob.timer=conf->t_total;
@@ -60,7 +61,8 @@ int main(int argc, char *argv[]) {
                 timer_start(&timer_turn);
             break;
         case '3':   // M_MAIN, "Charger une partie sauvegardée"
-//            reprise_partie_sauvegarde(&game);
+//          reprise_partie_sauvegarde(&game);
+//	    timer_start(&timer_conn);
             MenuState=M_WAIT;
             break;
         case '4':   // M_MYTURN|M_HISTURN|M_PAUSED, "Stopper en sauvegardant" -> retour au menu principal
@@ -68,7 +70,7 @@ int main(int argc, char *argv[]) {
                 timer_stop(&timer_turn);
             timer_stop(&timer_glob);
 
-//            sauvegarder(&game);
+           sauvegarder(&game);
 
             msg.type=MSG_ENDGAME;
             msg_send(&msg, 0);
@@ -91,7 +93,7 @@ int main(int argc, char *argv[]) {
             timer_resume(&timer_turn);
             break;
         case '7':   // M_MYTURN|M_HISTURN|M_PAUSED, "Visualiser l'historique"
-//            afficher_historique(&game);
+            afficher_historique(&game);
             // on ne change pas d'état
             break;
         case '8':   // M_MYTURN|M_HISTURN|M_PAUSED, "Stopper en visualisant l'historique" -> retour au menu principal (sans sauvegarder)
