@@ -122,10 +122,9 @@ void reprise_partie_sauvegarde(sGame *g) {
     // TODO
 
     char tmp[256];
-    unsigned int utmp;
     LIST *l, *ltmp;
-    sMsg msg;
-    int comp1=1,comp2=2;
+    int comp1=1;
+    int comp2=1;
 
     //choix de la partie sauvegardée
     printf("Parties ouvertes :\n");
@@ -140,13 +139,13 @@ void reprise_partie_sauvegarde(sGame *g) {
     printf("Entrez le nom de la partie que vous voulez rejoindre :\n");
     readStdin(tmp, sizeof(tmp));
 
-    if(!game_histo_load(g,tmp){
+    if(!game_histo_load(g,tmp)){
 	exitOnErrSyst("game_histo_load", NULL);
     }
     //FIXME empecher les autres de pouvoir ouvrir la meme sauvegarde
     //Celui qui charge la partie choisit entre J1 et J2
     while(comp1!=0 || comp2!=0){
-        printf("Entrez le nom du joueur que vous étiez : %s (J1) ou %s (J2) \n"g->conf.playername[0],g->conf.playername[1]);
+        printf("Entrez le nom du joueur que vous étiez : %s (J1) ou %s (J2) \n",g->conf.playername[0],g->conf.playername[1]);
         readStdin(tmp, sizeof(tmp));
         comp1=strncmp(tmp,g->conf.playername[0],8);
         comp2=strncmp(tmp,g->conf.playername[1],8);
@@ -185,13 +184,12 @@ void afficher_historique(sGame *g) {
         exitOnErrSyst("pipe","creation du pipe impossible");
     }
 
-/*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
-    close(tube[0]);
-    
+
     
 /*ecriture dans le tube des données de la partie*/
     sprintf(buf, "Nom du Joueur 1 : %-8s \nNom du Joueur 2 : %-8s\n Temps total : %04u \n Temps par tour : %04u\r\n", g->conf.playername[0], g->conf.playername[1], (unsigned int)g->conf.t_total, (unsigned int)g->conf.t_turn);
     buflenght=strlen(buf);
+
 	//ecriture des donnees dans le tube
      if((write(tube[1],buf,buflenght))==-1){
                 exitOnErrSyst("write","ecriture dans le tube");
@@ -212,25 +210,37 @@ void afficher_historique(sGame *g) {
     if((pid=fork())==-1){
         exitOnErrSyst("fork","creation fils");
     }
-    
+
     if(pid==0){
         /*Code du fils*/
-        
+
         /*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
         close(tube[1]);
         close(0);//pour pouvoir recopier tube[0]
         dup(tube[0]);  
         close(tube[0]);
         
-        /* lecture donnees du tube, ouverture du terminal et affichage*/
-      /* FIXME  remplacer xxx par entrée standard .. possible avec less ? ou creer un petit programme qui.. affiche simplement ce qui reçoit à l'entrée standard ?*/
+        /* lecture donnees du tube, et affichage*/
+  
 
-	//system("xterm -e less XXX 1"); 
-	system("xterm");     
-        exit(0);
-    }
+    int nbOctetLus=1; //pour rentrer dans la boucle. Servira a savoir si on a fini de lire le message utilisateur entre au clavier
+    char buffer[100]; //pour stocker le message entre par l'utilisateur
     
+    /*boucle tant que le message de l'utilisateur n'est pas entirement lu*/
+    while(nbOctetLus>0){
+        /*lecture de l'entree standard (0).*/
+        nbOctetLus=read(0,buffer,100);
+
+        /*affichage sur la sortie standard (l'ecran : 1). On affiche seulement la ou il y a du texte*/
+        write(1,buffer,nbOctetLus);
+     }
+
+     exit(0);
+    }// fin fils 
     
+    /*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
+    close(tube[0]);
+
     wait(&status);
      
 }

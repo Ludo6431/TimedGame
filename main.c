@@ -93,15 +93,19 @@ int main(int argc, char *argv[]) {
             timer_resume(&timer_turn);
             break;
         case '7':   // M_MYTURN|M_HISTURN|M_PAUSED, "Visualiser l'historique"
+            timer_pause(&timer_turn);
+            timer_pause(&timer_glob);  
+
             afficher_historique(&game);
-            // on ne change pas d'état
+
+            MenuState=M_PAUSED;
             break;
         case '8':   // M_MYTURN|M_HISTURN|M_PAUSED, "Stopper en visualisant l'historique" -> retour au menu principal (sans sauvegarder)
             if(MenuState==M_MYTURN)
                 timer_stop(&timer_turn);
             timer_stop(&timer_glob);
 
-//            afficher_historique(&game);
+           afficher_historique(&game);
 
             msg.type=MSG_ENDGAME;
             msg_send(&msg, 0);
