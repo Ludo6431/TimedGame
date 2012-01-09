@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
                 timer_start(&timer_turn, conf->t_turn);
             break;
         case '3':   // M_MAIN, "Charger une partie sauvegardée"
-//          reprise_partie_sauvegarde(&game);
+            reprise_partie_sauvegarde(&game);
             timer_start(&timer_conn, 30);
             MenuState=M_WAITCON;
             break;
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
                 timer_stop(&timer_turn);
             timer_stop(&timer_glob);
 
-           sauvegarder(&game);
+            sauvegarder(&game);
 
             msg.type=MSG_ENDGAME;
             msg_send(&msg, 0);
@@ -76,18 +76,14 @@ int main(int argc, char *argv[]) {
             MenuState=M_MAIN;
             break;
         case '5':   // M_MYTURN, "Mettre en pause"
-//            pause(&game);
-            MenuState=M_PAUSED;
-
             timer_pause(&timer_turn);
             timer_pause(&timer_glob);
+            MenuState=M_PAUSED;
             break;
         case '6':   // M_PAUSED, "Reprendre"
-//            reprendre(&game);
-            MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);    // has to be M_MYTURN
-
             timer_resume(&timer_glob);
             timer_resume(&timer_turn);
+            MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);    // has to be M_MYTURN
             break;
         case '7':   // M_MYTURN|M_HISTURN|M_PAUSED, "Visualiser l'historique"
             if(MenuState==M_MYTURN)
@@ -103,7 +99,7 @@ int main(int argc, char *argv[]) {
                 timer_stop(&timer_turn);
             timer_stop(&timer_glob);
 
-           afficher_historique(&game);
+            afficher_historique(&game);
 
             msg.type=MSG_ENDGAME;
             msg_send(&msg, 0);

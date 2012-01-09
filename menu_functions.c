@@ -12,8 +12,6 @@
 #include "tools.h"  // readStdin, exitOnErrSyst
 #include "game.h"   // game_*
 #include "timer.h"  // timer_*
-#include "longjump.h"   // long jump stuff
-#include "sigmsg.h" // sigmsg*
 #include "msgs.h"   // msgs_handler
 
 #include "menu_functions.h"
@@ -62,19 +60,36 @@ int connexion(sGame *g) {
     LIST *l, *ltmp;
     sMsg msg;
 
-    printf("Parties ouvertes :\n");
-    ltmp=l=game_histo_getlist();
-    while(ltmp) {
-        printf("\t%s\n", (char *)ltmp->data);
-        // TODO vérifier que les parties sont en cours
+    while(1) {
+        unsigned int i, j;
 
-        ltmp=ltmp->next;
+        printf("Parties ouvertes :\n");
+        i=0;
+        ltmp=l=game_histo_getlist();
+        while(ltmp) {
+            printf("\t%d: %s\n", ++i, (char *)ltmp->data);
+            // TODO vérifier que les parties sont en cours
+
+            ltmp=ltmp->next;
+        }
+
+        printf("Entrez le numéro de la partie que vous voulez rejoindre :\n");
+        readStdin(tmp, sizeof(tmp));
+
+        if(sscanf(tmp, "%d", &j)!=1)
+            continue;
+
+        if(j>0 && j<=i) {
+            ltmp=l;
+            i=0;
+            while(++i!=j)
+                ltmp=ltmp->next;
+
+            break;  // ltmp is the selected game
+        }
     }
 
-    printf("Entrez le nom de la partie que vous voulez rejoindre :\n");
-    readStdin(tmp, sizeof(tmp));
-    game_new(g, tmp); // game_new intialise le jeu
-    // TODO: choisir une partie dans la liste avec son numéro ?
+    game_new(g, (char *)ltmp->data); // game_new intialise le jeu
 
     /* récupération des informations sur la partie et initialisation de g */
     printf("Vous êtes le joueur n°2\n");
@@ -83,7 +98,6 @@ int connexion(sGame *g) {
     printf("Entrez votre nom :\n");
     readStdin(tmp, sizeof(tmp));
     utmp=strlen(tmp)+1;
-//    game_set_playername(g, P_2, tmp);
 
     // ouverture de la mémoire partagée existante
     if(msg_init(game_get_filepath(g), 0600, g)==-1)
@@ -118,57 +132,77 @@ int connexion(sGame *g) {
     return 0;
 }
 
-void reprise_partie_sauvegarde(sGame *g) {
-    // TODO
-
+int reprise_partie_sauvegarde(sGame *g) {
     char tmp[256];
     LIST *l, *ltmp;
-    int comp1=1;
-    int comp2=1;
+    unsigned int i, j;
 
-    //choix de la partie sauvegardée
-    printf("Parties ouvertes :\n");
-    ltmp=l=game_histo_getlist();
-    while(ltmp) {
-        printf("\t%s\n", (char *)ltmp->data);
-        // TODO vérifier que les parties sont en cours
+    while(1) {
+        printf("Parties sauvegardées :\n");
+        i=0;
+        ltmp=l=game_histo_getlist();
+        while(ltmp) {
+            printf("\t%d: %s\n", ++i, (char *)ltmp->data);
+            // TODO vérifier que les parties ne sont pas en cours
 
-        ltmp=ltmp->next;
-    }
+            ltmp=ltmp->next;
+        }
 
-    printf("Entrez le nom de la partie que vous voulez rejoindre :\n");
-    readStdin(tmp, sizeof(tmp));
-
-    if(!game_histo_load(g,tmp)){
-	exitOnErrSyst("game_histo_load", NULL);
-    }
-    //FIXME empecher les autres de pouvoir ouvrir la meme sauvegarde
-    //Celui qui charge la partie choisit entre J1 et J2
-    while(comp1!=0 || comp2!=0){
-        printf("Entrez le nom du joueur que vous étiez : %s (J1) ou %s (J2) \n",g->conf.playername[0],g->conf.playername[1]);
+        printf("Entrez le numéro de la partie que vous voulez ouvrir :\n");
         readStdin(tmp, sizeof(tmp));
-        comp1=strncmp(tmp,g->conf.playername[0],8);
-        comp2=strncmp(tmp,g->conf.playername[1],8);
+
+        if(sscanf(tmp, "%d", &j)!=1)
+            continue;
+
+        if(j>0 && j<=i) {
+            ltmp=l;
+            i=0;
+            while(++i!=j)
+                ltmp=ltmp->next;
+
+            break;  // ltmp is the selected game
+        }
     }
-    //TODO
-    /* ouverture mem partagée et canal de communication */
 
-    
+    if(game_histo_load(g, (char *)ltmp->data))
+        exitOnErrSyst("game_histo_load", NULL);
+
+    while(1) {
+        printf("Qui étiez-vous ?\n\t1: %s\n\t2: %s\n", g->conf.playername[0], g->conf.playername[1]);
+        readStdin(tmp, sizeof(tmp));
+
+        if(sscanf(tmp, "%d", &i)!=1)
+            continue;
+
+        if(i==1)
+            break;
+
+        if(i==2) {
+            char tmp[sizeof(*g->conf.playername)];
+
+            // the name of the player 1 is supposed to be in g->conf.playername[0]
+            strcpy(tmp, g->conf.playername[0]);
+            strcpy(g->conf.playername[0], g->conf.playername[1]);
+            strcpy(g->conf.playername[1], tmp);
+
+            break;
+        }
+    }
+
+    game_histo_save(g);
+
+    /* création canal de communication */
+    if(msg_init(game_get_filepath(g), 0600|IPC_CREAT|IPC_EXCL, (void *)g)==-1)
+        exitOnErrSyst("msg_init", NULL);
+
+    return 0;    
 }
 
-void sauvegarder(sGame *g) {
+int sauvegarder(sGame *g) {
+    if(game_histo_save(g))
+        exitOnErrSyst("game_histo_save", NULL);
 
-	if(!game_histo_save(g)){
-		exitOnErrSyst("game_histo_save", NULL);
-	}
-}
-
-/*void pause(sGame *g) {
-    // TODO
-}*/
-
-void reprendre(sGame *g) {
-    // TODO
+    return 0;
 }
 
 void afficher_historique(sGame *g) {
