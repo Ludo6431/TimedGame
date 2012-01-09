@@ -156,7 +156,9 @@ inline int _sigmsgsend(int sig, const void *msgp, size_t msgsz) {
     _shm->tablen=msgsz;
 
     // let's tell the other processus there's a message for it
-    kill(_shm->dest, sig);
+    if(kill(_shm->dest, sig)==-1)
+        return -1;
+
     while(_shm->status & SHM_BUSY)   // and wait until he acknoledges it
         pthread_cond_wait(&_shm->cv, &_shm->me);
 
