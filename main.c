@@ -90,8 +90,9 @@ int main(int argc, char *argv[]) {
             timer_resume(&timer_turn);
             break;
         case '7':   // M_MYTURN|M_HISTURN|M_PAUSED, "Visualiser l'historique"
-            timer_pause(&timer_turn);
-            timer_pause(&timer_glob);  
+            if(MenuState==M_MYTURN)
+                timer_pause(&timer_turn);
+            timer_pause(&timer_glob);
 
             afficher_historique(&game);
 
@@ -116,7 +117,9 @@ int main(int argc, char *argv[]) {
             else {  // M_WAITCON|M_MYTURN|M_HISTURN|M_PAUSED, "Retour au menu principal" (sans sauvegarder)
                 if(MenuState==M_MYTURN)
                     timer_stop(&timer_turn);
-                if(MenuState!=M_WAITCON)
+                if(MenuState==M_WAITCON)
+                    timer_stop(&timer_conn);
+                else
                     timer_stop(&timer_glob);
 
                 msg.type=MSG_ENDGAME;
@@ -131,6 +134,8 @@ int main(int argc, char *argv[]) {
 
             jouer_coup(&game, choix+1);
             if(game_get_state(&game)==GS_WIN) {
+                timer_stop(&timer_glob);
+
                 retour_menu(&game);
                 MenuState=M_MAIN;
             }
@@ -172,6 +177,8 @@ int main(int argc, char *argv[]) {
             case MSG_GAMETURN:
                 game_playturn(&game, (sGameTurn *)last_msg.data);
                 if(game_get_state(&game)==GS_WIN) {
+                    timer_stop(&timer_glob);
+
                     retour_menu(&game);
                     MenuState=M_MAIN;
                 }
