@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "menu.h"   // menu_run
+#include "game.h"
 #include "menu_functions.h" // ...
 #include "timer.h"  // timer_stop
 #include "msgs.h"   // to get the last received message
@@ -24,14 +25,14 @@ int main(int argc, char *argv[]) {
     char buf[256];
     char *choix;
 
-    sTimer timer_glob={ 0 , _timer_conn, (void *)1, &jumpenv, 0 /* FIXME */ };
-    sTimer timer_turn={ 0 , _timer_conn, (void *)2, &jumpenv, LJUMP_TIMER };
+    sTimer timer_glob={ 0, _timer_conn, (void *)1, &jumpenv, 10 /* FIXME */ };
     sTimer timer_conn={ 0, _timer_conn, (void *)2, &jumpenv, LJUMP_TIMER };
+    sTimer timer_turn={ 0, _timer_conn, (void *)2, &jumpenv, LJUMP_TIMER };
 
 // TODO: l'état pause doit être passé à l'autre processus pour mettre en pause son timer global
 
     while(1) {
-        printf("\x1b[2J\x1b[0;0H");
+        printf("\x1b[2J\x1b[0;0H");  // clear screen & go to the upper left hand corner
 
         // TODO: flush the input buffer before printing the new menu
 
@@ -50,7 +51,7 @@ int main(int argc, char *argv[]) {
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
             connexion(&game);
-	    //FIXME si on se connecte a une partie sauvegardée qui vient d'être re-ouverte, il faut faire en sorte d'imposer au joueur qui se connecte son role ( J1 ou J2), car celui qui a re-ouvert la partie a choisi qui il était.
+            // FIXME: si on se connecte a une partie sauvegardée qui vient d'être re-ouverte, il faut faire en sorte d'imposer au joueur qui se connecte son role ( J1 ou J2), car celui qui a re-ouvert la partie a choisi qui il était.
             MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
 
             timer_start(&timer_glob, conf->t_total);
@@ -170,8 +171,8 @@ int main(int argc, char *argv[]) {
                 if(MenuState==M_MYTURN)
                     timer_start(&timer_turn, conf->t_turn);
                 break;
-            case MSG_GAMETURN:
-                game_playturn(&game, (sGameTurn *)last_msg.data);
+            case MSG_GAMETURN:  // the other process send us the turn the player just did
+                game_playturn(&game, (sGameTurn *)last_msg.data);   // play this turn locally
                 if(game_get_state(&game)==GS_WIN) {
                     timer_stop(&timer_glob);
 
