@@ -38,6 +38,7 @@ struct {
     {'9', "Annuler",                                        M_WAITCON                                },
     {'9', "Retour au menu principal",                                  M_MYTURN| M_HISTURN| M_PAUSED },
     {'/', "Jouer un coup",                                             M_MYTURN                      },
+    {'/', "Reprendre et jouer un coup",                                                     M_PAUSED }
 };
 
 // affiche le menu pour un état de menu donné, récupère une ligne tapée au clavier par l'utilisateur et vérifie que le choix est possible

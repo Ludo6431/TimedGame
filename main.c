@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
                 MenuState=M_MAIN;
             }
             break;
-        case '/':   // M_MYTURN, "Jouer un coup"
+        case '/':   // M_MYTURN|M_PAUSED, "Jouer un coup"/"Reprendre et jouer un coupe"
             timer_stop(&timer_turn);
 
             jouer_coup(&game, choix+1);
