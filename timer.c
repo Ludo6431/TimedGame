@@ -6,7 +6,6 @@
 #include <errno.h>  // errno
 
 #include "list.h"   // singly-linked list management
-#include "tools.h"  // xcalloc
 
 #include "timer.h"
 
@@ -76,13 +75,15 @@ void _handler(int sig) {
     }
 }
 
-int timer_start(sTimer *t) {
+int timer_start(sTimer *t, int t) {
 // when the timer expires, there will be a long jump to env with this timer_expired_code
     struct sigaction act;
     memset((void *)&act, '\0', sizeof(struct sigaction));
 
     // TODO: add SIGALRM to sigmask
 
+    if(t)
+        t->timer=t;
     _timers_alive=list_append(_timers_alive, (void *)t);
 
     if(t->uf)
@@ -95,6 +96,16 @@ int timer_start(sTimer *t) {
     // TODO: remove SIGALRM from sigmask
 
     alarm(1);
+
+    return 0;
+}
+
+int timer_set(sTimer *t, int t) {
+    // TODO: add SIGALRM to sigmask
+
+    t->timer=t;
+
+    // TODO: remove SIGALRM from sigmask
 
     return 0;
 }

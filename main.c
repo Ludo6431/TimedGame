@@ -25,8 +25,8 @@ int main(int argc, char *argv[]) {
     char *choix;
 
     sTimer timer_glob={ 0 , _timer_conn, (void *)1, &jumpenv, 0 /* FIXME */ };
-    sTimer timer_conn={ 30, _timer_conn, (void *)2, &jumpenv, LJUMP_TIMER };    // you have 30 seconds to connect
     sTimer timer_turn={ 0 , _timer_conn, (void *)2, &jumpenv, LJUMP_TIMER };
+    sTimer timer_conn={ 0, _timer_conn, (void *)2, &jumpenv, LJUMP_TIMER };
 
 // TODO: l'état pause doit être passé à l'autre processus pour mettre en pause son timer global
 
@@ -46,24 +46,21 @@ int main(int argc, char *argv[]) {
             nouvelle_partie(&game);
             MenuState=M_WAIT;
 
-            timer_start(&timer_conn);   // start the connexion timer
+            timer_start(&timer_conn, 30);   // start the 30s connexion timer
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
             connexion(&game);
 	    //FIXME si on se connecte a une partie sauvegardée qui vient d'être re-ouverte, il faut faire en sorte d'imposer au joueur qui se connecte son role ( J1 ou J2), car celui qui a re-ouvert la partie a choisi qui il était.
             MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
 
-            timer_glob.timer=conf->t_total;
-            timer_turn.timer=conf->t_turn;
-
-            timer_start(&timer_glob);
+            timer_start(&timer_glob, conf->t_total);
             if(MenuState==M_MYTURN)
-                timer_start(&timer_turn);
+                timer_start(&timer_turn, conf->t_turn);
             break;
         case '3':   // M_MAIN, "Charger une partie sauvegardée"
 //          reprise_partie_sauvegarde(&game);
-//	    timer_start(&timer_conn);
             MenuState=M_WAIT;
+            timer_start(&timer_conn, 30);
             break;
         case '4':   // M_MYTURN|M_HISTURN|M_PAUSED, "Stopper en sauvegardant" -> retour au menu principal
             if(MenuState==M_MYTURN)
@@ -140,9 +137,8 @@ int main(int argc, char *argv[]) {
             else
                 MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
 
-            timer_turn.timer=conf->t_turn;
             if(MenuState==M_MYTURN)
-                timer_start(&timer_turn);
+                timer_start(&timer_turn, conf->t_turn);
             break;
         }
 
@@ -169,12 +165,9 @@ int main(int argc, char *argv[]) {
 
                 MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
 
-                timer_turn.timer=conf->t_turn;
-                timer_glob.timer=conf->t_total;
-
-                timer_start(&timer_glob);
+                timer_start(&timer_glob, conf->t_total);
                 if(MenuState==M_MYTURN)
-                    timer_start(&timer_turn);
+                    timer_start(&timer_turn, conf->t_turn);
                 break;
             case MSG_GAMETURN:
                 game_playturn(&game, (sGameTurn *)last_msg.data);
@@ -185,9 +178,8 @@ int main(int argc, char *argv[]) {
                 else
                     MenuState=((game_get_player(&game)==game_get_me(&game))?M_MYTURN:M_HISTURN);
 
-                timer_turn.timer=conf->t_turn;
                 if(MenuState==M_MYTURN)
-                    timer_start(&timer_turn);
+                    timer_start(&timer_turn, conf->t_turn);
                 break;
             case MSG_ENDGAME:   // the other process quit
                 if(MenuState==M_MYTURN)

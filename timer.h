@@ -13,7 +13,8 @@ typedef struct {
     int jmpcode;
 } sTimer;
 
-int timer_start (sTimer *t);
+int timer_start (sTimer *t, int t);
+int timer_set   (sTimer *t, int t);
 int timer_pause (sTimer *t);
 int timer_resume(sTimer *t);
 int timer_stop  (sTimer *t);
