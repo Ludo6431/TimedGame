@@ -44,9 +44,9 @@ int main(int argc, char *argv[]) {
         switch(choix[0]) {
         case '1':   // M_MAIN, "Nouvelle partie"
             nouvelle_partie(&game);
-            MenuState=M_WAIT;
 
             timer_start(&timer_conn, 30);   // start the 30s connexion timer
+            MenuState=M_WAITCON;
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
             connexion(&game);
@@ -59,8 +59,8 @@ int main(int argc, char *argv[]) {
             break;
         case '3':   // M_MAIN, "Charger une partie sauvegardée"
 //          reprise_partie_sauvegarde(&game);
-            MenuState=M_WAIT;
             timer_start(&timer_conn, 30);
+            MenuState=M_WAITCON;
             break;
         case '4':   // M_MYTURN|M_HISTURN|M_PAUSED, "Stopper en sauvegardant" -> retour au menu principal
             if(MenuState==M_MYTURN)
@@ -113,10 +113,10 @@ int main(int argc, char *argv[]) {
             if(MenuState==M_MAIN) { // M_MAIN, "Quitter"
                 exit(0);
             }
-            else {  // M_WAIT|M_MYTURN|M_HISTURN|M_PAUSED, "Retour au menu principal" (sans sauvegarder)
+            else {  // M_WAITCON|M_MYTURN|M_HISTURN|M_PAUSED, "Retour au menu principal" (sans sauvegarder)
                 if(MenuState==M_MYTURN)
                     timer_stop(&timer_turn);
-                if(MenuState!=M_WAIT)
+                if(MenuState!=M_WAITCON)
                     timer_stop(&timer_glob);
 
                 msg.type=MSG_ENDGAME;
@@ -146,8 +146,8 @@ int main(int argc, char *argv[]) {
         switch(sigsetjmp(jumpenv, 1 /* save signals mask */)) {
         case 0: // ok, environment saved
             break;
-        case LJUMP_TIMER:   // timer expired
-            if(MenuState!=M_WAIT)
+        case LJUMP_TIMER:   // M_WAITCON|M_MYTURN, timer expired
+            if(MenuState!=M_WAITCON)
                 timer_stop(&timer_glob);
 
             // TODO afficher message erreur

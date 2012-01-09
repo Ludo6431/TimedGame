@@ -15,7 +15,7 @@ struct {
     char *msg;
 } states[]={
     {M_MAIN,    "Menu principal"},
-    {M_WAIT,    "Attente d'un joueur..."},
+    {M_WAITCON, "Attente d'un joueur..."},
     {M_MYTURN,  "Partie en cours, à votre tour de jouer"},
     {M_HISTURN, "Partie en cours, attente que l'autre joueur ait joué son tour"},
     {M_PAUSED,  "Partie en pause"},
@@ -26,18 +26,18 @@ struct {
     char *msg;
     unsigned int flags;
 } menu[]={
-    {'1', "Nouvelle partie",                        M_MAIN                                        },
-    {'2', "Connexion à une partie",                 M_MAIN                                        },
-    {'3', "Charger une partie sauvegardée",         M_MAIN                                        },
-    {'4', "Stopper en sauvegardant",                                M_MYTURN| M_HISTURN| M_PAUSED },
-    {'5', "Mettre en pause",                                        M_MYTURN                      },
-    {'6', "Reprendre",                                                                   M_PAUSED },
-    {'7', "Visualiser l'historique",                                M_MYTURN| M_HISTURN| M_PAUSED },
-    {'8', "Stopper en visualisant l'historique",                    M_MYTURN| M_HISTURN| M_PAUSED },
-    {'9', "Quitter",                                M_MAIN                                        },
-    {'9', "Annuler",                                        M_WAIT                                },
-    {'9', "Retour au menu principal",                               M_MYTURN| M_HISTURN| M_PAUSED },
-    {'/', "Jouer un coup",                                          M_MYTURN                      },
+    {'1', "Nouvelle partie",                        M_MAIN                                           },
+    {'2', "Connexion à une partie",                 M_MAIN                                           },
+    {'3', "Charger une partie sauvegardée",         M_MAIN                                           },
+    {'4', "Stopper en sauvegardant",                                   M_MYTURN| M_HISTURN| M_PAUSED },
+    {'5', "Mettre en pause",                                           M_MYTURN                      },
+    {'6', "Reprendre",                                                                      M_PAUSED },
+    {'7', "Visualiser l'historique",                                   M_MYTURN| M_HISTURN| M_PAUSED },
+    {'8', "Stopper en visualisant l'historique",                       M_MYTURN| M_HISTURN| M_PAUSED },
+    {'9', "Quitter",                                M_MAIN                                           },
+    {'9', "Annuler",                                        M_WAITCON                                },
+    {'9', "Retour au menu principal",                                  M_MYTURN| M_HISTURN| M_PAUSED },
+    {'/', "Jouer un coup",                                             M_MYTURN                      },
 };
 
 // affiche le menu pour un état de menu donné, récupère une ligne tapée au clavier par l'utilisateur et vérifie que le choix est possible
