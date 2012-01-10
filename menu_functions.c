@@ -269,7 +269,7 @@ int sauvegarder(sGame *g) {
 }
 
 void afficher_historique(sGame *g) {
-    int pid=0,buflenght=0,tube[2];
+    int pid=0,tube[2];
     int status; /*pour code retour wait() */
     char buf[150];
     LIST *turns=g->turns;
@@ -277,32 +277,11 @@ void afficher_historique(sGame *g) {
 /* Creation du tube */
     if(pipe(tube)==-1)
         exitOnErrSyst("pipe","creation du pipe impossible");
-    
-/*ecriture dans le tube des données de la partie*/
-    sprintf(buf, "Nom du Joueur 1 : %-8s \nNom du Joueur 2 : %-8s\n Temps total : %04u \n Temps par tour : %04u\r\n", g->conf.playername[0], g->conf.playername[1], (unsigned int)g->conf.t_total, (unsigned int)g->conf.t_turn);
-    buflenght=strlen(buf);
 
-    //ecriture des donnees dans le tube
-    if((write(tube[1],buf,buflenght))==-1)
-        exitOnErrSyst("write","ecriture dans le tube");
-
-    while(turns) {
-        sprintf(buf, "%04u%s %u\r\n", (unsigned int)((sGameTurn *)turns->data)->t_remaining, g->conf.playername[((sGameTurn *)turns->data)->player], ((sGameTurn *)turns->data)->type);
-    buflenght=strlen(buf);
-//ecriture des donnees dans le tube
-         if((write(tube[1],buf,buflenght))==-1){
-                exitOnErrSyst("write","ecriture dans le tube");
-         }
-
-        turns=turns->next;
-    }
-
-
-    if((pid=fork())==-1){
+    if((pid=fork())==-1)
         exitOnErrSyst("fork","creation fils");
-    }
 
-    if(pid==0){
+    if(pid==0) {
         /*Code du fils*/
 
         /*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
@@ -311,29 +290,33 @@ void afficher_historique(sGame *g) {
         dup(tube[0]);  
         close(tube[0]);
         
-        /* lecture donnees du tube, et affichage*/
-  
+        printf("\x1b[2J");
 
-    int nbOctetLus=1; //pour rentrer dans la boucle. Servira a savoir si on a fini de lire le message utilisateur entre au clavier
-    char buffer[100]; //pour stocker le message entre par l'utilisateur
-    
-    /*boucle tant que le message de l'utilisateur n'est pas entirement lu*/
-    while(nbOctetLus>0){
-        /*lecture de l'entree standard (0).*/
-        nbOctetLus=read(0,buffer,100);
-
-        /*affichage sur la sortie standard (l'ecran : 1). On affiche seulement la ou il y a du texte*/
-        write(1,buffer,nbOctetLus);
-     }
-
-     exit(0);
+        execlp("less", "less", (void *)NULL);
     }// fin fils 
-    
+
+    /*ecriture dans le tube des données de la partie*/
+    sprintf(buf, "Nom du Joueur 1 : %-8s \nNom du Joueur 2 : %-8s\n Temps total : %04u \n Temps par tour : %04u\r\n", g->conf.playername[0], g->conf.playername[1], (unsigned int)g->conf.t_total, (unsigned int)g->conf.t_turn);
+
+    //ecriture des donnees dans le tube
+    if((write(tube[1],buf,strlen(buf)))==-1)
+        exitOnErrSyst("write","ecriture dans le tube");
+
+    while(turns) {
+        sprintf(buf, "%04u%s %u\r\n", (unsigned int)((sGameTurn *)turns->data)->t_remaining, g->conf.playername[((sGameTurn *)turns->data)->player], ((sGameTurn *)turns->data)->type);
+//ecriture des donnees dans le tube
+         if((write(tube[1],buf,strlen(buf)))==-1)
+                exitOnErrSyst("write","ecriture dans le tube");
+
+        turns=turns->next;
+    }
+
     /*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
     close(tube[0]);
+    close(tube[1]);
 
     wait(&status);
-     
+
 }
 
 

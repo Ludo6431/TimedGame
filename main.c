@@ -41,8 +41,6 @@ int main(int argc, char *argv[]) {
     sTimer timer_conn={ 0, _timer_conn, (void *)2    , &jumpenv, LJUMP_TIMER };
     sTimer timer_turn={ 0, _timer_conn, (void *)2    , &jumpenv, LJUMP_TIMER };
 
-// TODO: l'état pause doit être passé à l'autre processus pour mettre en pause son timer global
-
     while(1) {
         printf("\x1b[2J\x1b[0;0H");  // clear screen & go to the upper left hand corner
 
@@ -64,11 +62,11 @@ int main(int argc, char *argv[]) {
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
             if(!connexion(&game)) { // ok
+                MenuState=(game_isit_myturn(&game)?M_MYTURN:M_HISTURN);
+
                 timer_start(&timer_glob, conf->t_total);
                 if(MenuState==M_MYTURN)
                     timer_start(&timer_turn, conf->t_turn);
-
-                MenuState=(game_isit_myturn(&game)?M_MYTURN:M_HISTURN);
             }
             break;
         case '3':   // M_MAIN, "Charger une partie sauvegardée"
@@ -116,6 +114,9 @@ int main(int argc, char *argv[]) {
             if(MenuState==M_MYTURN)
                 timer_pause(&timer_turn);
             timer_pause(&timer_glob);
+
+            msg.type=MSG_PAUSE;
+            msg_send(&msg, 0);
 
             afficher_historique(&game);
 
@@ -204,7 +205,7 @@ int main(int argc, char *argv[]) {
                 if(MenuState==M_MYTURN)
                     timer_start(&timer_turn, conf->t_turn);
                 break;
-            case MSG_TURN:  // M_HISTURN|M_PAUSED TODO?, the other process send us the turn the player just did
+            case MSG_TURN:  // M_HISTURN|M_PAUSED, the other process send us the turn the player just did
                 game_playturn(&game, (sGameTurn *)last_msg.data);   // play this turn locally
                 if(state->state==GS_WIN) {
                     timer_stop(&timer_glob);
