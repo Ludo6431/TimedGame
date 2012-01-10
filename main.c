@@ -9,21 +9,32 @@
 #include "msgs.h"   // to get the last received message
 #include "longjump.h"   // long jump stuff
 
-void _timer_conn(int sig, int t, void *data) {
-    printf("%c7\x1b[%d;0H", '\x1b', (int)data);
+void _timer_conn(int sig, int t, sGame *g) {
+    printf("%c7\x1b[2;0H", '\x1b'); // on sauvegarde la position du curseur actuelle et on se place en haut de l'écran
 
-    printf("Il te reste %02d secondes%c8", t, '\x1b');
+    printf("Temps restant connexion : %02ds", t);
 
+    printf("%c8", '\x1b');  // on restaure la position sauvegardée du curseur
+    fflush(stdout);
+}
+
+void _timer_turn(int sig, int t, sGame *g) {
+    printf("%c7\x1b[2;0H", '\x1b'); // on sauvegarde la position du curseur actuelle et on se place en haut de l'écran
+
+    printf("Temps restant tour  : %02ds", t);
+
+    printf("%c8", '\x1b');  // on restaure la position sauvegardée du curseur
     fflush(stdout);
 }
 
 void _timer_glob(int sig, int t, sGame *g) {
-    printf("%c7\x1b[1;0H", '\x1b');
+    printf("%c7\x1b[1;0H", '\x1b'); // on sauvegarde la position du curseur actuelle et on se place en haut de l'écran
 
     game_get_state(g, NULL)->t_remaining=t;   // update remaining time
 
-    printf("Il te reste %02d secondes%c8", t, '\x1b');
+    printf("Temps total restant : %02ds", t);
 
+    printf("%c8", '\x1b');  // on restaure la position sauvegardée du curseur
     fflush(stdout);
 }
 
@@ -38,9 +49,9 @@ int main(int argc, char *argv[]) {
     int ljump, ret;
     char msgmenu[64]={0}; // one-line message in the menu
 
-    sTimer timer_glob={ 0, _timer_glob, (void *)&game, &jumpenv, 10 /* FIXME */ };
-    sTimer timer_conn={ 0, _timer_conn, (void *)2    , &jumpenv, LJUMP_TIMER };
-    sTimer timer_turn={ 0, _timer_conn, (void *)2    , &jumpenv, LJUMP_TIMER };
+    sTimer timer_glob={ 0, (timer_handler)_timer_glob, (void *)&game, &jumpenv, LJUMP_TIMER_GLOB };
+    sTimer timer_conn={ 0, (timer_handler)_timer_conn, (void *)&game, &jumpenv, LJUMP_TIMER_CONN };
+    sTimer timer_turn={ 0, (timer_handler)_timer_turn, (void *)&game, &jumpenv, LJUMP_TIMER_TURN };
 
     while(1) {
         printf("\x1b[2J\x1b[0;0H");  // clear screen & go to the upper left hand corner
@@ -189,15 +200,36 @@ int main(int argc, char *argv[]) {
         switch((ljump=sigsetjmp(jumpenv, 1 /* save signals mask */))) {
         case 0: // ok, environment saved
             break;
-        case LJUMP_TIMER:   // M_WAITCON|M_MYTURN, timer expired
-            if(MenuState!=M_WAITCON)
-                timer_stop(&timer_glob);
+        case LJUMP_TIMER_CONN:   // M_WAITCON, timer expired
+            strcpy(msgmenu, "Temps d'attente de connexion écoulé");
 
-            strcpy(msgmenu, "Temps ecoule, tu as perdu");
+            retour_menu(&game, 1 /* delete histo file */);
+
+            MenuState=M_MAIN;
+            break;
+        case LJUMP_TIMER_TURN:   // M_MYTURN, timer expired
+            timer_stop(&timer_glob);
+
+            strcpy(msgmenu, "Temps écoulé, tu as perdu");
 
             msg.type=MSG_END;
             msg.data[0]=1;  // delete histo file
-            strcpy(&msg.data[1], "Temps ecoule pour l'autre joueur, tu as gagne");
+            strcpy(&msg.data[1], "Temps écoulé pour l'autre joueur, tu as gagné");
+            msg_send(&msg, 1+strlen(&msg.data[1])+1);
+
+            retour_menu(&game, 1 /* delete histo file */);
+
+            MenuState=M_MAIN;
+            break;
+        case LJUMP_TIMER_GLOB:   // M_MYTURN|M_HISTURN, timer expired
+            if(MenuState==M_MYTURN)
+                timer_stop(&timer_turn);
+
+            strcpy(msgmenu, "Temps de la partie écoulé, match nul");
+
+            msg.type=MSG_END;
+            msg.data[0]=1;  // delete histo file
+            strcpy(&msg.data[1], "Temps de la partie écoulé, match nul");
             msg_send(&msg, 1+strlen(&msg.data[1])+1);
 
             retour_menu(&game, 1 /* delete histo file */);

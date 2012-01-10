@@ -270,7 +270,6 @@ int sauvegarder(sGame *g) {
 
 void afficher_historique(sGame *g) {
     sGameConf *conf = game_get_conf(g, NULL);
-    sGameState *state = game_get_state(g, NULL);
     int pid=0, tube[2];
     int status; /* pour code retour wait() */
     char buf[150];
