@@ -5,8 +5,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
-#include "alloc.h"  // xalloc
+#include <string.h> // strlen
 
 #include "menu.h"
 
@@ -37,26 +36,52 @@ struct {
     {'9', "Quitter",                                M_MAIN                                           },
     {'9', "Annuler",                                        M_WAITCON                                },
     {'9', "Retour au menu principal",                                  M_MYTURN| M_HISTURN| M_PAUSED },
-    {'/', "Jouer un coup",                                             M_MYTURN                      },
-    {'/', "Reprendre et jouer un coup",                                                     M_PAUSED }
+    {'/', "Jouer un coup",                                             M_MYTURN                      }
 };
+
+int _get_max_items() {
+    int i, j, k, nb=0;
+
+    for(i=0; i<sizeof(states)/sizeof(*states); i++) {   // pour chaque état de menu ...
+        k=0;
+
+        for(j=0; j<sizeof(menu)/sizeof(*menu); j++) // ... on regarde le nombre max d'éléments qu'on peut avoir
+            if(menu[j].flags & states[i].flag)
+                k++;
+
+        nb=MAX(nb, k);
+    }
+
+    return nb;
+}
 
 // affiche le menu pour un état de menu donné, récupère une ligne tapée au clavier par l'utilisateur et vérifie que le choix est possible
 char *menu_run(eMenuState st, char *buf, unsigned int size) {
     char *ret;
-    int i;
+    int i, nb=0;
+    static int nbitemsmax = 0;
+
+    if(!nbitemsmax)
+        nbitemsmax=_get_max_items();
 
     // print menu title
     for(i=0; i<sizeof(states)/sizeof(*states); i++)
-        if(states[i].flag & st)
-            printf("%s\n", states[i].msg);
+        if(states[i].flag & st) {
+            printf("\x1b[K%s\n", states[i].msg);    // clear the line and write the new content
+            nb++;
+        }
 
     // print menu items
     for(i=0; i<sizeof(menu)/sizeof(*menu); i++)
-        if(menu[i].flags & st)
-            printf("\t%c : %s\n", menu[i].key, menu[i].msg);
+        if(menu[i].flags & st) {
+            printf("\x1b[K\t%c : %s\n", menu[i].key, menu[i].msg);  // clear the line and write the new content
+            nb++;
+        }
 
-    printf(">");
+    for(i=nb; i<nbitemsmax+2; i++)
+        printf("\x1b[K\n"); // clear the line and write the new content
+
+    printf(">");    // ceci sera toujours affiché au même endroit peut-importe le nombre d'éléments dans le menu (cf boucle ci-dessus) 
     fflush(stdout);
 
     // get a line from the standard input
