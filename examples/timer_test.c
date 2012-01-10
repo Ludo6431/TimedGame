@@ -5,32 +5,69 @@
 
 #include "timer.h"
 
-void sighnd(int sig, int timer, void *data) {
-    printf("\x1b[s\x1b[0;0H");
+// gcc -o timer -I.. timer.c timer_test.c ../list.c ../tools.c
 
-    printf("%02d seconds remaining", timer);
+void sighnd(int sig, int timer, void *data) {
+    printf("\x1b[s\x1b[%d;4H", (int)data);
+
+    printf("%d seconds remaining\x1b[K", timer);
 
     printf("\x1b[u");
     fflush(stdout);
 }
 
 int main(int argc, char *argv[]) {
-    char buffer[256];
     sigjmp_buf env;
-    int var=1;
+    int var=1, i, s;
 
-    printf("\x1b[2J\x1b[0;0Hline1\nline2\n");
+    sTimer timers[]={
+        {20, sighnd, (void *)1, &env, 20},
+        {15, sighnd, (void *)2, &env, 15},
+        {13, sighnd, (void *)3, &env, 13},
+        {10, sighnd, (void *)4, &env, 10},
+        { 9, sighnd, (void *)5, &env,  9},
+        { 5, sighnd, (void *)6, &env,  5},
+        { 1, sighnd, (void *)7, &env,  1}
+    };
 
-    timer_start(5, &env, 1, sighnd, NULL);
+    printf("\x1b[2J\x1b[0;0H");
 
-    if(!sigsetjmp(env, 1)) {
-        var=2;
-        fgets(buffer, 256, stdin);
-        printf("typed: \x1b[07m%s\x1b[00m\n", buffer);
-        printf("you had %d seconds left...\n", timer_stop());
+    for(i=0; i<sizeof(timers)/sizeof(*timers); i++) {
+        if(i!=4)
+            timer_start(&timers[i], 0);
+        printf("%2d:\n", timers[i].jmpcode);
     }
+    printf("\n");
+
+    s=sigsetjmp(env, 1);
+
+    if(s==0)
+        var=2;
     else
-        printf("\x1b[07mTimer expired...\x1b[00m\n");
+        printf("Timer %d expired\n", s);
+
+    if(s==5) {
+        timer_pause(&timers[1]);
+        printf("Paused timer 15\n");
+
+        timer_start(&timers[4], 0);
+        printf("Started timer 9\n");
+
+        timer_stop(&timers[2]);
+        printf("Stopped timer 13\n");
+    }
+
+    if(s==9) {
+        timer_start(&timers[2], 13);
+        printf("Started timer 13\n");
+    }
+
+    if(s==10) {
+        timer_resume(&timers[1]);
+        printf("Resumed timer 15\n");
+    }
+
+    getchar();
 
     printf("var=%d\n", var);
 
