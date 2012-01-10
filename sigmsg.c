@@ -12,7 +12,7 @@
 #define BIT(b) (1<<(b))
 
 typedef enum {
-    SHM_ANS =BIT(1),    // we have an answer
+    SHM_ANS =BIT(0),    // we have an answer
 
     SHM_BUSY=BIT(7)     // the shm is busy
 } eShm;
@@ -35,9 +35,23 @@ static void *_userp=NULL;
 
 // TODO: finish, sanitize, check errors, ...
 
-int sigmsginit(key_t key, int msgflg) {   // create a new message canal
-    // TODO: use msgflg
+int sigmsgctl(key_t key, int cmd, struct sigmsgid_ds *buf) {
+    int sigmsgid, ret;
+    struct shmid_ds shmbuf;
 
+    if((sigmsgid = shmget(key, sizeof(sShm), 0600))==-1)
+        return -1;
+
+    ret=shmctl(sigmsgid, cmd, &shmbuf);
+    if(ret==-1)
+        return -1;
+
+    buf->sigmsg_nattch=shmbuf.shm_nattch;
+
+    return 0;
+}
+
+int sigmsginit(key_t key, int msgflg) {   // create a new message canal
     int rc;
 
     if((_shmid = shmget(key, sizeof(sShm), msgflg))==-1) {
@@ -146,7 +160,7 @@ inline int _sigmsgsend(int sig, const void *msgp, size_t msgsz) {
     }
 
     _shm->status|=SHM_BUSY;
-    _shm->dest=(_shm->pids[0]==getpid())?_shm->pids[1]:_shm->pids[0];   // TODO: check this variable
+    _shm->dest=(_shm->pids[0]==getpid())?_shm->pids[1]:_shm->pids[0];
     if(!_shm->dest) {
         errno=ENXIO;
         return -1;

@@ -1,10 +1,19 @@
 #ifndef _SIGMSG_H
 #define _SIGMSG_H
 
+#include <sys/shm.h>
+
 #define MAX_SIGMSG_SZ 256
 
 typedef void (*sigmsghnd)(int sig, const void *msgp, size_t msgsz, void *userp);
 
+struct sigmsgid_ds {
+    // TODO: add fields of shmid_ds
+
+    shmatt_t   sigmsg_nattch;  /* No. of current attaches */
+};
+
+int     sigmsgctl       (key_t key, int cmd, struct sigmsgid_ds *buf);
 int     sigmsginit      (key_t key, int msgflg);                    // initialize the message canal
 int     sigmsgreg       (int sig, sigmsghnd func, void *userp);     // register a function which will be called on a received message
 
