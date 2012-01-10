@@ -5,10 +5,19 @@
 #include "sigmsg.h" // MAX_SIGMSG_SZ
 
 typedef enum {
-    MSG_JOINGAME,
-    MSG_CONFUPDATE,
-    MSG_GAMETURN,
-    MSG_ENDGAME
+    // init handshake
+    MSG_JOIN,
+    MSG_INITST8,
+    MSG_READY,
+    MSG_START,
+
+    // in-game messages
+    MSG_TURN,
+    MSG_PAUSE,
+    MSG_RESUME,
+
+    // ending message
+    MSG_END
 } eMsgsTypes;
 
 typedef struct {

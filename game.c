@@ -110,41 +110,90 @@ LIST *game_histo_getlist() {
 int game_histo_load(sGame *g, const char *name) {
     FILE *f;
     char line[256];
+    int ret;
+    sGameConf *conf=&g->conf;
+    sGameState *state=&g->st;
 
-    if(!(f=fopen(game_get_filepath(g), "rb")))
-        return 1;
+    memset(g, '\0', sizeof(*g));
 
-    strncpy(g->conf.gamename, name, sizeof(g->conf.gamename));
+    strncpy(conf->gamename, name, sizeof(conf->gamename));
     g->turns=NULL;
 
+    if(!(f=fopen(game_get_filepath(g), "rb")))  // the filepath is calculated with the gamename
+        return 1;
+
     while(fgets(line, sizeof(line), f)) {
-        if(line[0]=='H' && line[1]=='X') {  // game configuration
-            sscanf(line+2, "%s %s %04d%04d", g->conf.playername[0], g->conf.playername[1], (int *)&g->conf.t_total, (int *)&g->conf.t_turn);
-            // TODO check error and return 1
+        if(line[0]=='H' && line[1]=='X') {  // get game configuration
+            sscanf(line+2, "%s", conf->playername[P_1]);
+            sscanf(line+11, "%s", conf->playername[P_2]);
+            ret=sscanf(line+20, "%04d%04d", (int *)&conf->t_total, (int *)&conf->t_turn);
+            if(ret!=2) {
+                fclose(f);
+                return 1;
+            }
+
+fprintf(stderr, "HX%s %s %04d%04d\n", conf->playername[P_1], conf->playername[P_2], (int)conf->t_total, (int)conf->t_turn);
         }
         else if(line[0]=='F' && line[1]=='I' && line[2]=='N') {
             // OK, TODO check magic/CRC? and return 1
+fprintf(stderr, "FIN\n");
             break;
         }
-        else {
+        else {  // get turn
             sGameTurn *turn=xcalloc(1, sizeof(sGameTurn));
 
             char player[9];
-            sscanf(line, "%04d%s %u", (int *)&turn->t_remaining, player, &turn->type); // TODO check error
-            if(!strcmp(player, g->conf.playername[0]))
+            ret=sscanf(line, "%04d%s %u", (int *)&turn->t_remaining, player, &turn->type);
+            if(ret!=3) {
+                fclose(f);
+                return 1;
+            }
+
+            if(!strcmp(player, conf->playername[P_1]))
                 turn->player=P_1;
-            else if(!strcmp(player, g->conf.playername[1]))
+            else if(!strcmp(player, conf->playername[P_2]))
                 turn->player=P_2;
             else {
                 fclose(f);
                 return 1;
             }
 
+fprintf(stderr, "%04d%s(%d) %u\n", (int)turn->t_remaining, player, turn->player, turn->type);
+
             g->turns=list_append(g->turns, turn);
         }
     }
 
     fclose(f);
+
+    // set initial state based on the last played turn
+    if(g->turns) {
+        LIST *tmp=g->turns;
+        sGameTurn *turn;
+
+        while(tmp->next)    // get last turn
+            tmp=tmp->next;
+
+        // get curr player (next player to play)
+        turn=(sGameTurn *)tmp->data;
+        switch(turn->type) {
+        case T_OK:  // le dernier tour a été bien fait par turn->player, c'est donc à l'autre
+            state->pcurr=!turn->player;
+            break;
+        case T_INVALID: // le dernier tour a été mal fait par turn->player, c'est donc toujours à lui
+            state->pcurr=turn->player;
+            break;
+        case T_WIN: // wtf, ended games shouldn't be there...
+            g->st.state=GS_WIN;
+            state->pcurr=turn->player;
+            break;
+        default:
+            break;
+        }
+
+        // get remaining time
+        state->t_remaining=turn->t_remaining;
+    }
 
     return 0;
 }
@@ -173,18 +222,19 @@ int game_histo_save(const sGame *g) {
 }
 
 int game_playturn(sGame *g, const sGameTurn *t) {
-    if(g->state!=GS_INIT && g->state!=GS_TURN)
+    if(g->st.state!=GS_INIT && g->st.state!=GS_TURN)
         return 1;
 
-    g->state = GS_TURN;
+    g->st.state = GS_TURN;
+    g->st.t_remaining = t->t_remaining;
 
     g->turns = list_append(g->turns, xmemdup((void *)t, sizeof(*t)));    // push the turn on the stack
 
     if(t->type==T_WIN)
-        g->state=GS_WIN;
+        g->st.state=GS_WIN;
 
     if(t->type==T_OK)
-        g->player^=1;   // change player
+        g->st.pcurr^=1;   // change current player
 
     return 0;
 }

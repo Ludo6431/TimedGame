@@ -10,15 +10,9 @@
 #include "list.h"   // LIST, list_*
 
 typedef enum {
-    P_1=0,
+    P_1=0,  // de sorte que !P_2 == P_1 et !P_1 == P_2
     P_2=1
 } ePlayer;
-
-typedef enum {
-    GS_INIT,    // initial state
-    GS_TURN,    // turn in progress (see ePlayer to know which player turn it is)
-    GS_WIN      // a player won (see ePlayer to know which one won)
-} eGameState;
 
 typedef enum {
     T_OK,
@@ -34,21 +28,41 @@ typedef struct {    // define a turn of the game
     time_t t_remaining;
 } sGameTurn;
 
+// stocke la configuration de la partie => statique
 typedef struct {
     char gamename[64];  // game name
     char playername[2][9];  // players names
-    ePlayer firstplayer;    // the player starting to play
     time_t t_total;
     time_t t_turn;
+
+    ePlayer phost, pjoin;
 } sGameConf;
 
+typedef enum {
+    GS_INIT,    // initial state
+    GS_TURN,    // turn in progress (see ePlayer to know which player turn it is)
+    GS_WIN      // a player won (see ePlayer to know which one won)
+} eGameState;
+
+// stocke le statut du jeu => évolue au cours de la partie
 typedef struct {
-    sGameConf conf; // configuration of the game
-
-    eGameState state;   // current state of the game
-    ePlayer player, me;    // current player, who i am
+    eGameState state;
+    ePlayer pcurr;
     time_t t_remaining;
+} sGameState;
 
+typedef struct {    // initial state of the game, sent to the new user
+    sGameConf conf;
+    sGameState st;
+} sGameInit;
+
+typedef struct {
+    // shared data
+    sGameConf conf; // configuration of the game
+    sGameState st; // real-time status of the game
+
+    // local data
+    ePlayer pme;
     LIST *turns;    // list of game turns
 } sGame;
 
@@ -80,19 +94,14 @@ void            game_set_conf           (sGame *g, sGameConf *c) { memcpy(&g->co
 
 // game state
 static inline
-ePlayer         game_get_me             (sGame *g) { return g->me; }
+sGameState *    game_get_state          (sGame *g, sGameState *s) { if(s) { memcpy(s, &g->st, sizeof(*s)); return s; } else return &g->st; }
 static inline
-void            game_set_me             (sGame *g, ePlayer p) { g->me=p; }
-static inline
-eGameState      game_get_state          (sGame *g) { return g->state; }
-static inline
-ePlayer         game_get_player         (sGame *g) { return g->player; }
-static inline
-void            game_set_player         (sGame *g, ePlayer p) { g->player=p; }
-static inline
-time_t          game_get_remainingtime  (sGame *g) { return g->t_remaining; }
-static inline
-void            game_set_remainingtime  (sGame *g, time_t t) { g->t_remaining=t; }
+void            game_set_state          (sGame *g, sGameState *s) { memcpy(&g->st, s, sizeof(*s)); }
+
+static inline   // Is it my turn?
+int             game_isit_myturn        (sGame *g) { return g->pme==g->st.pcurr; }
+static inline   // Am I host?
+int             game_ami_host           (sGame *g) { return g->pme==g->conf.phost; }
 
 static inline
 LIST *          game_histo_destroylist  (LIST *l) {
@@ -102,7 +111,7 @@ static inline
 void            game_destroy            (sGame *g) {
     g->turns=list_destroy_full(g->turns, (free_handler)free);   // free the turns stack
 
-    g->state=GS_INIT;
+    g->st.state=GS_INIT;
 }
 
 #endif

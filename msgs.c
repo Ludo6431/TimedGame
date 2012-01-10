@@ -15,23 +15,30 @@ sMsg last_msg;
 unsigned int last_msg_datasz;
 
 void msgs_handler(int sig, sMsg *msg /* in the shm */, unsigned int datasz, sGame *g) {
-    sGameConf *conf;
-
+    sGameConf *conf = game_get_conf(g, NULL);
+    sGameState *state = game_get_state(g, NULL);
     memcpy(&last_msg, msg, datasz); // make a copy because out of this handler, the shm may be modified
     datasz-=sizeof(eMsgsTypes); // datasz will only be the size of the payload
     last_msg_datasz=datasz;
 
     switch(msg->type) {
-    case MSG_JOINGAME:
-        conf = game_get_conf(g, NULL);
-        strcpy(conf->playername[P_2], msg->data);
-
+    case MSG_JOIN:{ // no payload
         // prepare and send answer to sender
-        msg->type=MSG_CONFUPDATE;
-        memcpy(msg->data, conf, sizeof(*conf));
-        msg_answer(msg, sizeof(*conf));
+        sGameInit *init=(sGameInit *)msg->data;
+        memcpy(&init->conf, conf, sizeof(*conf));
+        memcpy(&init->st, state, sizeof(*state));
 
-    case MSG_GAMETURN:
+        msg->type=MSG_INITST8;
+        msg_answer(msg, sizeof(*init));
+        break;}  // never reached
+    case MSG_READY: // payload is sGameConf
+        game_set_conf(g, (sGameConf *)msg->data);
+
+        msg->type=MSG_START;
+        msg_answer(msg, 0); // no payload
+    case MSG_TURN:  // payload is sGameTurn
+    case MSG_PAUSE: // no payload
+    case MSG_RESUME:    // payload is the remaining time stored in an int
     case MSG_END:   // 1 char payload (0 or 1 to choose if you should delete the histo file)
         sigmsgunlock(); // if we don't return from this isr, we have to unlock the shm
         siglongjmp(jumpenv, LJUMP_ISR);    // let's stop what we are doing

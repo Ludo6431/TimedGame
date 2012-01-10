@@ -16,8 +16,42 @@
 
 #include "menu_functions.h"
 
+typedef enum {
+    GT_NOT_RUNNING,
+    GT_RUNNING,
+    GT_WAITING
+} eGameTypes;
+
+LIST *get_games(eGameTypes type) {
+    LIST *l, *ret=NULL;
+    sGame g;
+    struct sigmsgid_ds buf;
+
+    for(l=game_histo_getlist(); l; l=l->next) {
+        game_new(&g, (char *)l->data);
+
+        if(msg_ctl(&g, IPC_STAT, &buf)==-1) {   // can't open it => not running
+            if(type==GT_NOT_RUNNING)
+                ret=list_append(ret, l->data);
+
+            continue;
+        }
+
+        if(buf.sigmsg_nattch==1)   // this game is lacking a player
+            if(type==GT_WAITING)
+                ret=list_append(ret, l->data);
+
+        if(buf.sigmsg_nattch==2)   // this game is running
+            if(type==GT_RUNNING)
+                ret=list_append(ret, l->data);
+    }
+
+    return ret;
+}
+
 int nouvelle_partie(sGame *g) {
-    sGameConf *conf;
+    sGameConf *conf=game_get_conf(g, NULL);
+    sGameState *state=game_get_state(g, NULL);
     char tmp[256];
     time_t ttmp;
 
@@ -25,50 +59,70 @@ int nouvelle_partie(sGame *g) {
     printf("Nom de la partie       : ");
     readStdin(tmp, sizeof(tmp));
     game_new(g, tmp); // game_new intialise le jeu
-    conf=game_get_conf(g, NULL);
 
-    printf("Vous êtes le joueur n°1\n");
+    conf->phost=P_1;
+    conf->pjoin=P_2;
+    g->pme=P_1;
+
     printf("Votre pseudo           : ");
     readStdin(tmp, sizeof(tmp));
-    strcpy(conf->playername[P_1], tmp);
-
-    // TODO: demander qui commence la partie et modifier conf->firstplayer
+    strcpy(conf->playername[g->pme], tmp);
 
     printf("Durée de la partie (s) : ");
     readStdin(tmp, sizeof(tmp));
     ttmp = (time_t)atoi(tmp);
     conf->t_total=ttmp;
-    game_set_remainingtime(g, ttmp);
+    state->t_remaining=ttmp;
 
     printf("Durée par coup (s)     : ");
     readStdin(tmp, sizeof(tmp));
     conf->t_turn=(time_t)atoi(tmp);
 
+    while(1) {
+        int i;
+
+        printf("Qui commence ?\n\t1: vous (%s)\n\t2: votre adversaire\n", conf->playername[g->pme]);
+        readStdin(tmp, sizeof(tmp));
+
+        if(sscanf(tmp, "%d", &i)!=1)
+            continue;
+
+        if(i==1 || i==2) {
+            state->pcurr=((i==1)?g->pme:!g->pme);
+            break;
+        }
+    }
+
     /* création fichier .histo vide pour créer la mémoire partagée */
     game_histo_save(g);
 
     /* création canal de communication */
-    if(msg_init(game_get_filepath(g), 0600|IPC_CREAT|IPC_EXCL, (void *)g)==-1)
+    if(msg_init(g, 1 /* create */)==-1)
         exitOnErrSyst("msg_init", NULL);
 
     return 0;
 }
 
 int connexion(sGame *g) {
+    sGameConf *conf = game_get_conf(g, NULL);
+    sGameState *state = game_get_state(g, NULL);
     char tmp[256];
     unsigned int utmp;
-    LIST *l, *ltmp;
+    LIST *ltmp;
     sMsg msg;
 
     while(1) {
-        unsigned int i, j;
+        LIST *l;
+        unsigned int i=0, j;
+
+        ltmp=l=get_games(GT_WAITING);
+        if(!ltmp)
+// TODO: print message
+            return -1;   // aucune partie en attente de joueur
 
         printf("Parties ouvertes :\n");
-        i=0;
-        ltmp=l=game_histo_getlist();
         while(ltmp) {
             printf("\t%d: %s\n", ++i, (char *)ltmp->data);
-            // TODO vérifier que les parties sont en cours
 
             ltmp=ltmp->next;
         }
@@ -89,61 +143,76 @@ int connexion(sGame *g) {
         }
     }
 
-    game_new(g, (char *)ltmp->data); // game_new intialise le jeu
-
-    /* récupération des informations sur la partie et initialisation de g */
-    printf("Vous êtes le joueur n°2\n");
-    game_set_me(g, P_2);
-
-    printf("Entrez votre nom :\n");
-    readStdin(tmp, sizeof(tmp));
-    utmp=strlen(tmp)+1;
+    if(game_histo_load(g, (char *)ltmp->data))
+        exitOnErrSyst("game_histo_load", NULL);
 
     // ouverture de la mémoire partagée existante
-    if(msg_init(game_get_filepath(g), 0600, g)==-1)
+    if(msg_init(g, 0 /* connect to existant */)==-1)
         exitOnErrSyst("msg_init", NULL);
 
     // on se signale à l'autre processus (en indiquant notre nom)
-    msg.type=MSG_JOINGAME;
-    strcpy(msg.data, tmp);
+    msg.type=MSG_JOIN;
+    utmp=0; // no payload
     if(msg_transfer(&msg, &utmp)==-1)
-        exitOnErrSyst("msg_transfer", tmp);
+        exitOnErrSyst("msg_transfer", NULL);
 
-    // l'autre processus devrait nous renvoyer la conf complète du jeu
-    if(msg.type==MSG_CONFUPDATE) {
-        sGameConf *conf = (sGameConf *)msg.data;
-
-        game_set_conf(g, conf);    // configuration synchronized
-        game_set_player(g, conf->firstplayer);
-
-        // FIXME: attention, ceci est recouvert par le menu
-        printf("Configuration du jeu :\n");
-        printf("Joueur 1 : %s\n", conf->playername[P_1]);
-        printf("Joueur 2 : %s\n", conf->playername[P_2]);
-        printf("Le joueur %d commence\n", conf->firstplayer+1);
-        printf("Durée de la partie : %us\n", (unsigned int)conf->t_total);
-        printf("Durée par coup     : %us\n", (unsigned int)conf->t_turn);
-    }
-    else {
-        // TODO: return to menu nicely or ask the config
-        fprintf(stderr, "we didn't get the config\n");
+    // on n'a pas reçu l'état initial que doit nous envoyer l'hôte 
+    if(msg.type!=MSG_INITST8) {
+        msg_deinit(0 /* don't destroy */);
+        return -1;
     }
 
-    return 0;
+    /* récupération des informations sur la partie et initialisation de g */
+    game_set_conf(g, &((sGameInit *)msg.data)->conf);    // configuration synchronized
+    game_set_state(g, &((sGameInit *)msg.data)->st);
+
+    g->pme=conf->pjoin;
+    if(!strlen(conf->playername[g->pme])) { // we don't have a pseudo, let's ask one
+        printf("Votre pseudo :\n");
+        readStdin(tmp, sizeof(tmp));
+        strcpy(conf->playername[g->pme], tmp);
+    }
+
+    // FIXME: attention, ceci est recouvert par le menu
+    printf("Configuration du jeu :\n");
+    printf("Vous       : %s\n", conf->playername[g->pme]);
+    printf("Adversaire : %s\n", conf->playername[!g->pme]);
+    printf("%s commence\n", conf->playername[state->pcurr]);
+    printf("Durée de la partie : %us\n", (unsigned int)conf->t_total);
+    printf("Durée par coup     : %us\n", (unsigned int)conf->t_turn);
+
+    // let's say we are ready and give the full configuration to the hist (with our name)
+    msg.type=MSG_READY;
+    memcpy(msg.data, conf, sizeof(*conf));
+    utmp=sizeof(*conf);
+    if(msg_transfer(&msg, &utmp)==-1)
+        exitOnErrSyst("msg_transfer", NULL);
+
+    if(msg.type!=MSG_START) {
+        msg_deinit(0 /* don't destroy */);
+        return -1;
+    }
+
+    return 0;   // green light, let's go !!!
 }
 
 int reprise_partie_sauvegarde(sGame *g) {
+    sGameConf *conf = game_get_conf(g, NULL);
     char tmp[256];
-    LIST *l, *ltmp;
-    unsigned int i, j;
+    LIST *ltmp;
 
     while(1) {
+        LIST *l;
+        unsigned int i=0, j;
+
+        ltmp=l=get_games(GT_NOT_RUNNING);
+        if(!ltmp)
+// TODO: print message
+            return -1;   // aucune partie sauvegardée
+
         printf("Parties sauvegardées :\n");
-        i=0;
-        ltmp=l=game_histo_getlist();
         while(ltmp) {
             printf("\t%d: %s\n", ++i, (char *)ltmp->data);
-            // TODO vérifier que les parties ne sont pas en cours
 
             ltmp=ltmp->next;
         }
@@ -168,31 +237,25 @@ int reprise_partie_sauvegarde(sGame *g) {
         exitOnErrSyst("game_histo_load", NULL);
 
     while(1) {
-        printf("Qui étiez-vous ?\n\t1: %s\n\t2: %s\n", g->conf.playername[0], g->conf.playername[1]);
+        int i;
+
+        printf("Qui êtes-vous ?\n\t1: %s\n\t2: %s\n", conf->playername[P_1], conf->playername[P_2]);
         readStdin(tmp, sizeof(tmp));
 
         if(sscanf(tmp, "%d", &i)!=1)
             continue;
 
-        if(i==1)
-            break;
-
-        if(i==2) {
-            char tmp[sizeof(*g->conf.playername)];
-
-            // the name of the player 1 is supposed to be in g->conf.playername[0]
-            strcpy(tmp, g->conf.playername[0]);
-            strcpy(g->conf.playername[0], g->conf.playername[1]);
-            strcpy(g->conf.playername[1], tmp);
-
+        if(i==1 || i==2) {
+            g->pme=((i==1)?P_1:P_2);
+            conf->phost=g->pme;
+            conf->pjoin=!g->pme;
+            
             break;
         }
     }
 
-    game_histo_save(g);
-
     /* création canal de communication */
-    if(msg_init(game_get_filepath(g), 0600|IPC_CREAT|IPC_EXCL, (void *)g)==-1)
+    if(msg_init(g, 1 /* create */)==-1)
         exitOnErrSyst("msg_init", NULL);
 
     return 0;    
@@ -206,36 +269,30 @@ int sauvegarder(sGame *g) {
 }
 
 void afficher_historique(sGame *g) {
-
     int pid=0,buflenght=0,tube[2];
     int status; /*pour code retour wait() */
     char buf[150];
     LIST *turns=g->turns;
 
-
 /* Creation du tube */
-    if(pipe(tube)==-1){
+    if(pipe(tube)==-1)
         exitOnErrSyst("pipe","creation du pipe impossible");
-    }
-
-
     
 /*ecriture dans le tube des données de la partie*/
     sprintf(buf, "Nom du Joueur 1 : %-8s \nNom du Joueur 2 : %-8s\n Temps total : %04u \n Temps par tour : %04u\r\n", g->conf.playername[0], g->conf.playername[1], (unsigned int)g->conf.t_total, (unsigned int)g->conf.t_turn);
     buflenght=strlen(buf);
 
-	//ecriture des donnees dans le tube
-     if((write(tube[1],buf,buflenght))==-1){
-                exitOnErrSyst("write","ecriture dans le tube");
-     }
+    //ecriture des donnees dans le tube
+    if((write(tube[1],buf,buflenght))==-1)
+        exitOnErrSyst("write","ecriture dans le tube");
 
     while(turns) {
         sprintf(buf, "%04u%s %u\r\n", (unsigned int)((sGameTurn *)turns->data)->t_remaining, g->conf.playername[((sGameTurn *)turns->data)->player], ((sGameTurn *)turns->data)->type);
-	buflenght=strlen(buf);
+    buflenght=strlen(buf);
 //ecriture des donnees dans le tube
-     	if((write(tube[1],buf,buflenght))==-1){
+         if((write(tube[1],buf,buflenght))==-1){
                 exitOnErrSyst("write","ecriture dans le tube");
-     	}
+         }
 
         turns=turns->next;
     }
@@ -281,23 +338,24 @@ void afficher_historique(sGame *g) {
 
 
 void jouer_coup(sGame *g, char *s) {
-    sGameTurn turn;
+    sGameConf *conf=game_get_conf(g, NULL);
+    sGameState *state=game_get_state(g, NULL);
     sMsg msg;
+    sGameTurn *turn = (sGameTurn *)msg.data;
 
-    turn.player=game_get_player(g);
-    turn.t_remaining=game_get_remainingtime(g);
+    turn->player=state->pcurr;
+    turn->t_remaining=state->t_remaining;
 
     if(!strcasecmp(s, "normal") || !strcasecmp(s, ":)"))
-        turn.type=T_OK;
+        turn->type=T_OK;
     else if(!strcasecmp(s, "gagne") || !strcasecmp(s, ":D"))
-        turn.type=T_WIN;
+        turn->type=T_WIN;
     else
-        turn.type=T_INVALID;
+        turn->type=T_INVALID;
 
     // FIXME: attention, ceci est recouvert par le menu
-    printf("%s : ", game_get_conf(g, NULL)->playername[turn.player]);
-
-    switch(turn.type) {
+    printf("%s : ", conf->playername[turn->player]);
+    switch(turn->type) {
     case T_OK:
         printf("coup normal :)\n");
         break;
@@ -309,11 +367,10 @@ void jouer_coup(sGame *g, char *s) {
         break;
     }
 
-    game_playturn(g, &turn);
+    game_playturn(g, turn);
 
-    msg.type=MSG_GAMETURN;
-    memcpy(msg.data, &turn, sizeof(turn));
-    msg_send(&msg, sizeof(turn));
+    msg.type=MSG_TURN;
+    msg_send(&msg, sizeof(*turn));
 }
 
 void retour_menu(sGame *g, int del) {
