@@ -70,10 +70,12 @@ int main(int argc, char *argv[]) {
 
             sauvegarder(&game);
 
-            msg.type=MSG_ENDGAME;
-            msg_send(&msg, 0);
+            msg.type=MSG_END;
+            msg.data[0]=0;  // keep histo file
+            msg_send(&msg, 1);
 
-            retour_menu(&game);
+            retour_menu(&game, 0 /* keep histo file */);
+
             MenuState=M_MAIN;
             break;
         case '5':   // M_MYTURN, "Mettre en pause"
@@ -102,10 +104,12 @@ int main(int argc, char *argv[]) {
 
             afficher_historique(&game);
 
-            msg.type=MSG_ENDGAME;
-            msg_send(&msg, 0);
+            msg.type=MSG_END;
+            msg.data[0]=1;  // delete histo file
+            msg_send(&msg, 1);
 
-            retour_menu(&game);
+            retour_menu(&game, 1 /* delete histo file */);
+
             MenuState=M_MAIN;
         case '9':   // M_*
             if(MenuState==M_MAIN) { // M_MAIN, "Quitter"
@@ -119,10 +123,12 @@ int main(int argc, char *argv[]) {
                 else
                     timer_stop(&timer_glob);
 
-                msg.type=MSG_ENDGAME;
-                msg_send(&msg, 0);
+                msg.type=MSG_END;
+                msg.data[0]=1;  // delete histo file
+                msg_send(&msg, 1);
 
-                retour_menu(&game);
+                retour_menu(&game, 1 /* delete histo file */);
+
                 MenuState=M_MAIN;
             }
             break;
@@ -133,7 +139,8 @@ int main(int argc, char *argv[]) {
             if(game_get_state(&game)==GS_WIN) {
                 timer_stop(&timer_glob);
 
-                retour_menu(&game);
+                retour_menu(&game, 1 /* delete histo file */);
+
                 MenuState=M_MAIN;
             }
             else
@@ -154,10 +161,12 @@ int main(int argc, char *argv[]) {
 
             // TODO afficher message erreur
 
-            msg.type=MSG_ENDGAME;
-            msg_send(&msg, 0 /* no additionnal payload */);   // let's tell the other process we're done
+            msg.type=MSG_END;
+            msg.data[0]=1;  // delete histo file
+            msg_send(&msg, 1);   // let's tell the other process we're done
 
-            retour_menu(&game);
+            retour_menu(&game, 1 /* delete histo file */);
+
             MenuState=M_MAIN;
             break;
         case LJUMP_ISR: // the other process ask me to do something
@@ -176,7 +185,8 @@ int main(int argc, char *argv[]) {
                 if(game_get_state(&game)==GS_WIN) {
                     timer_stop(&timer_glob);
 
-                    retour_menu(&game);
+                    retour_menu(&game, 1 /* delete histo file */);
+
                     MenuState=M_MAIN;
                 }
                 else
@@ -185,12 +195,13 @@ int main(int argc, char *argv[]) {
                 if(MenuState==M_MYTURN)
                     timer_start(&timer_turn, conf->t_turn);
                 break;
-            case MSG_ENDGAME:   // the other process quit
+            case MSG_END:   // M_MYTURN|M_HISTURN|M_PAUSED, the other process quit
                 if(MenuState==M_MYTURN)
                     timer_stop(&timer_turn);
                 timer_stop(&timer_glob);
 
-                retour_menu(&game); // we quit aswell
+                retour_menu(&game, last_msg.data[0]); // we quit aswell
+
                 MenuState=M_MAIN;
                 break;
             default:

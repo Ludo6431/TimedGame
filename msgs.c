@@ -32,7 +32,7 @@ void msgs_handler(int sig, sMsg *msg /* in the shm */, unsigned int datasz, sGam
         msg_answer(msg, sizeof(*conf));
 
     case MSG_GAMETURN:
-    case MSG_ENDGAME:
+    case MSG_END:   // 1 char payload (0 or 1 to choose if you should delete the histo file)
         sigmsgunlock(); // if we don't return from this isr, we have to unlock the shm
         siglongjmp(jumpenv, LJUMP_ISR);    // let's stop what we are doing
         break;  // never reached

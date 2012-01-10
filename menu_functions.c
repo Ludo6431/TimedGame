@@ -316,9 +316,13 @@ void jouer_coup(sGame *g, char *s) {
     msg_send(&msg, sizeof(turn));
 }
 
-void retour_menu(sGame *g) {
-//    unlink()
-
-    msg_deinit(!game_get_me(g));  // destroy if we are the host of the game
+void retour_menu(sGame *g, int del) {
+    if(game_ami_host(g)) {
+        if(del)
+            unlink(game_get_filepath(g));
+        msg_deinit(1);  // destroy if we are the host of the game
+    }
+    else
+        msg_deinit(0);
 }
 
