@@ -234,6 +234,11 @@ int main(int argc, char *argv[]) {
             case MSG_RESUME:
                 MenuState=(game_isit_myturn(&game)?M_MYTURN:M_HISTURN);
 
+                if(pid_less!=0) {
+                    kill(pid_less, SIGTERM);
+                    pid_less=0;
+                }
+
                 if(MenuState==M_MYTURN)
                     timer_resume(&timer_turn);
                 timer_set(&timer_glob, *(int *)last_msg.data);

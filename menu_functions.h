@@ -5,6 +5,8 @@
 
 // prototypes of menu_functions.c
 
+extern pid_t pid_less;
+
 int     nouvelle_partie             (sGame *g);
 int     connexion                   (sGame *g);
 int     reprise_partie_sauvegarde   (sGame *g);

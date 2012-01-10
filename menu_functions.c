@@ -22,6 +22,8 @@ typedef enum {
     GT_WAITING
 } eGameTypes;
 
+pid_t pid_less=0;
+
 LIST *get_games(eGameTypes type) {
     LIST *l, *ret=NULL;
     sGame g;
@@ -297,6 +299,8 @@ void afficher_historique(sGame *g) {
 
     /*ecriture dans le tube des données de la partie*/
     sprintf(buf, "Nom du Joueur 1 : %-8s \nNom du Joueur 2 : %-8s\n Temps total : %04u \n Temps par tour : %04u\r\n", g->conf.playername[0], g->conf.playername[1], (unsigned int)g->conf.t_total, (unsigned int)g->conf.t_turn);
+    pid_less=pid;
+
 
     //ecriture des donnees dans le tube
     if((write(tube[1],buf,strlen(buf)))==-1)
@@ -317,6 +321,7 @@ void afficher_historique(sGame *g) {
 
     wait(&status);
 
+    pid_less=0;
 }
 
 
