@@ -42,17 +42,26 @@ void msgs_handler(int sig, sMsg *msg /* in the shm */, unsigned int datasz, sGam
     }
 }
 
-int msg_init(char *path, int msgflg, sGame *g) {
+int msg_ctl(sGame *g, int cmd, struct sigmsgid_ds *buf) {
     key_t key;
 
-    if((key=ftok(path, 0))==(key_t)-1)
-        exitOnErrSyst("ftok", NULL);
+    if((key=ftok(game_get_filepath(g), 0))==(key_t)-1)
+        return -1;
 
-    if(sigmsginit(key, msgflg)==-1)
-        exitOnErrSyst("sigmsginit", NULL);
+    return sigmsgctl(key, cmd, buf);
+}
+
+int msg_init(sGame *g, int create) {
+    key_t key;
+
+    if((key=ftok(game_get_filepath(g), 0))==(key_t)-1)
+        return -1;
+
+    if(sigmsginit(key, 0600|(create?(IPC_CREAT|IPC_EXCL):0))==-1)
+        return -1;
 
     if(sigmsgreg(SIGUSR1, (sigmsghnd)msgs_handler, (void *)g)==-1)
-        exitOnErrSyst("sigmsgreg", NULL);
+        return -1;
 
     return 0;
 }
