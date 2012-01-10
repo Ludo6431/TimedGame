@@ -11,7 +11,7 @@ typedef enum {
     M_PAUSED    =BIT(4)
 } eMenuState;
 
-char *menu_run(eMenuState st, char *msg, char *buf, unsigned int size);
+char *menu_run(eMenuState st, char *msg, char *ps1, char *buf, unsigned int size);
 
 #endif
 

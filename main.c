@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     sGameConf *conf = game_get_conf(&game, NULL);
     sGameState *state = game_get_state(&game, NULL);
     sMsg msg;
-    char buf[256];
+    char buf[256], ps1[16]="> ";
     char *choix;
     int ljump, ret;
     char msgmenu[64]={0}; // one-line message in the menu
@@ -60,7 +60,12 @@ int main(int argc, char *argv[]) {
 
         printf("\n\n");
 
-        if(!(choix=menu_run(MenuState, msgmenu, buf, sizeof(buf))) || !strlen(choix))
+        if(MenuState==M_MAIN)
+            strcpy(ps1, "> ");
+        else
+            sprintf(ps1, "%s> ", conf->playername[game.pme]);    // print our name
+
+        if(!(choix=menu_run(MenuState, msgmenu, ps1, buf, sizeof(buf))) || !strlen(choix))
             continue;   // loop
 
         switch(choix[0]) {
@@ -74,6 +79,8 @@ int main(int argc, char *argv[]) {
         case '2':   // M_MAIN, "Connexion à une partie"
             if(!(ret=connexion(&game))) { // ok
                 MenuState=(game_isit_myturn(&game)?M_MYTURN:M_HISTURN);
+
+                sprintf(msgmenu, "Vous venez de rejoindre %s, partie en %us (%us par tour)", conf->playername[!game.pme], (unsigned int)conf->t_total, (unsigned int)conf->t_turn);
 
                 timer_start(&timer_glob, conf->t_total);
                 if(MenuState==M_MYTURN)
@@ -240,6 +247,8 @@ int main(int argc, char *argv[]) {
             switch(last_msg.type) {
             case MSG_READY: // M_WAITCON
                 timer_stop(&timer_conn);   // ok someone is here, we can stop the connection wait timer
+
+                sprintf(msgmenu, "%s vient de vous rejoindre dans la partie", conf->playername[!game.pme]);
 
                 MenuState=(game_isit_myturn(&game)?M_MYTURN:M_HISTURN);
 
