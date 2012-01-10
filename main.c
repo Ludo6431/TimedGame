@@ -1,5 +1,6 @@
 /************************** main.c ************************/
 #include <stdio.h>
+#include <signal.h>
 
 #include "menu.h"   // menu_run
 #include "game.h"
@@ -9,20 +10,19 @@
 #include "longjump.h"   // long jump stuff
 
 void _timer_conn(int sig, int t, void *data) {
-    printf("\x1b[s\x1b[%d;0H", (int)data);
+    printf("%c7\x1b[%d;0H", '\x1b', (int)data);
 
-    printf("Il te reste %02d secondes", t);
+    printf("Il te reste %02d secondes%c8", t, '\x1b');
 
-    printf("\x1b[u");
     fflush(stdout);
 }
 
 void _timer_glob(int sig, int t, sGame *g) {
-    printf("\x1b[1;0H");
+    printf("%c7\x1b[1;0H", '\x1b');
 
     game_get_state(g, NULL)->t_remaining=t;   // update remaining time
 
-    printf("Il te reste %02d secondes", t);
+    printf("Il te reste %02d secondes%c8", t, '\x1b');
 
     fflush(stdout);
 }

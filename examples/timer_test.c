@@ -8,11 +8,11 @@
 // gcc -o timer -I.. timer.c timer_test.c ../list.c ../tools.c
 
 void sighnd(int sig, int timer, void *data) {
-    printf("\x1b[s\x1b[%d;4H", (int)data);
+    printf("%c7\x1b[%d;4H", '\x1b', (int)data);
 
     printf("%d seconds remaining\x1b[K", timer);
 
-    printf("\x1b[u");
+    printf("%c8", '\x1b');
     fflush(stdout);
 }
 

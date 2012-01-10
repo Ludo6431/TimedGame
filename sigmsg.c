@@ -72,7 +72,7 @@ int sigmsginit(key_t key, int msgflg) {   // create a new message canal
 
         // init mutex
         if((rc=pthread_mutexattr_init(&mattr))) {
-            shmdt(_shm);
+            shmdt((char *)_shm);
             errno=rc;
             return -1;
         }
@@ -81,7 +81,7 @@ int sigmsginit(key_t key, int msgflg) {   // create a new message canal
 
         if((rc=pthread_mutex_init(&_shm->me, &mattr))) {
             pthread_mutexattr_destroy(&mattr);
-            shmdt(_shm);
+            shmdt((char *)_shm);
             errno=rc;
             return -1;
         }
@@ -90,7 +90,7 @@ int sigmsginit(key_t key, int msgflg) {   // create a new message canal
 
         // init cond var
         if((rc=pthread_condattr_init(&cattr))) {
-            shmdt(_shm);
+            shmdt((char *)_shm);
             errno=rc;
             return -1;
         }
@@ -99,7 +99,7 @@ int sigmsginit(key_t key, int msgflg) {   // create a new message canal
 
         if((rc=pthread_cond_init(&_shm->cv, &cattr))) {
             pthread_condattr_destroy(&cattr);
-            shmdt(_shm);
+            shmdt((char *)_shm);
             errno=rc;
             return -1;
         }
@@ -285,7 +285,7 @@ int sigmsgdeinit(int destroy) {
     if(destroy)
         shmctl(_shmid, IPC_RMID, NULL);
 
-    shmdt(_shm);
+    shmdt((char *)_shm);
 
     _shmid=0;
     _shm=NULL;

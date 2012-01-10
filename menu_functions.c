@@ -157,7 +157,7 @@ int connexion(sGame *g) {
     if(msg_transfer(&msg, &utmp)==-1)
         exitOnErrSyst("msg_transfer", NULL);
 
-    // on n'a pas reçu l'état initial que doit nous envoyer l'hôte 
+    // on n'a pas reçu l'état initial que doit nous envoyer l'hôte
     if(msg.type!=MSG_INITST8) {
         msg_deinit(0 /* don't destroy */);
         return -1;
@@ -249,7 +249,7 @@ int reprise_partie_sauvegarde(sGame *g) {
             g->pme=((i==1)?P_1:P_2);
             conf->phost=g->pme;
             conf->pjoin=!g->pme;
-            
+
             break;
         }
     }
@@ -258,7 +258,7 @@ int reprise_partie_sauvegarde(sGame *g) {
     if(msg_init(g, 1 /* create */)==-1)
         exitOnErrSyst("msg_init", NULL);
 
-    return 0;    
+    return 0;
 }
 
 int sauvegarder(sGame *g) {
@@ -269,12 +269,14 @@ int sauvegarder(sGame *g) {
 }
 
 void afficher_historique(sGame *g) {
-    int pid=0,tube[2];
-    int status; /*pour code retour wait() */
+    sGameConf *conf = game_get_conf(g, NULL);
+    sGameState *state = game_get_state(g, NULL);
+    int pid=0, tube[2];
+    int status; /* pour code retour wait() */
     char buf[150];
     LIST *turns=g->turns;
 
-/* Creation du tube */
+    /* Creation du tube */
     if(pipe(tube)==-1)
         exitOnErrSyst("pipe","creation du pipe impossible");
 
@@ -282,38 +284,39 @@ void afficher_historique(sGame *g) {
         exitOnErrSyst("fork","creation fils");
 
     if(pid==0) {
-        /*Code du fils*/
+        /* Code du fils */
 
-        /*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
+        /* fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici) */
         close(tube[1]);
         close(0);//pour pouvoir recopier tube[0]
-        dup(tube[0]);  
+        dup(tube[0]);
         close(tube[0]);
-        
-        printf("\x1b[2J");
+
+        printf("\x1b[2J\n");
 
         execlp("less", "less", (void *)NULL);
-    }// fin fils 
+        // never reached
+    }
 
-    /*ecriture dans le tube des données de la partie*/
-    sprintf(buf, "Nom du Joueur 1 : %-8s \nNom du Joueur 2 : %-8s\n Temps total : %04u \n Temps par tour : %04u\r\n", g->conf.playername[0], g->conf.playername[1], (unsigned int)g->conf.t_total, (unsigned int)g->conf.t_turn);
     pid_less=pid;
 
+    /* ecriture dans le tube des données de la partie */
+    sprintf(buf, "Nom du Joueur 1 : %s \nNom du Joueur 2 : %s\n Temps total : %04u \n Temps par tour : %04u\r\n", conf->playername[P_1], conf->playername[P_2], (unsigned int)conf->t_total, (unsigned int)conf->t_turn);
 
-    //ecriture des donnees dans le tube
     if((write(tube[1],buf,strlen(buf)))==-1)
         exitOnErrSyst("write","ecriture dans le tube");
 
     while(turns) {
-        sprintf(buf, "%04u%s %u\r\n", (unsigned int)((sGameTurn *)turns->data)->t_remaining, g->conf.playername[((sGameTurn *)turns->data)->player], ((sGameTurn *)turns->data)->type);
-//ecriture des donnees dans le tube
+        sGameTurn *turn=(sGameTurn *)turns->data;
+
+        sprintf(buf, "%04u%s %u\r\n", (unsigned int)turn->t_remaining, g->conf.playername[((sGameTurn *)turns->data)->player], ((sGameTurn *)turns->data)->type);
          if((write(tube[1],buf,strlen(buf)))==-1)
                 exitOnErrSyst("write","ecriture dans le tube");
 
         turns=turns->next;
     }
 
-    /*fermeture du descripteur en ecriture sur le tube (on ne l'utilise pas ici)*/
+    /* fermeture des descripteur */
     close(tube[0]);
     close(tube[1]);
 
