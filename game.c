@@ -30,45 +30,14 @@ char *game_get_filepath(const sGame *g) {
     return filepath;
 }
 
-int game_histo_check(char *filepath) {
-    FILE *f;
-    long size;
-    char *buf;
+int game_histo_check(char *name) {
+    sGame game;
 
-    if(!(f=fopen(filepath, "rb")))
+    if(game_histo_load(&game, name))
         return 1;
 
-    if(fseek(f, 0, SEEK_END)) {
-        fclose(f);
-        return 1;
-    }
+    game_destroy(&game);
 
-    size=ftell(f);
-    if(size<0) {
-        fclose(f);
-        return 1;
-    }
-
-    if(fseek(f, 0, SEEK_SET)) {
-        fclose(f);
-        return 1;
-    }
-
-    buf=xmalloc(size);
-
-// FIXME don't load the entire file in memory
-    if(fread(buf, 1, size, f)!=size) {
-        fclose(f);
-        return 1;
-    }
-    fclose(f);
-
-    if(buf[0]!='H' || buf[1]!='X')
-        return 1;
-
-    xfree(buf);
-
-    // all tests passed
     return 0;
 }
 
@@ -77,7 +46,7 @@ LIST *game_histo_getlist() {
     DIR *dir;
     struct dirent *dire;
     LIST *files=NULL;
-    char *p, fpath[256];
+    char *p;
 
     if(!(dir=opendir("/tmp")))
         exitOnErrSyst("opendir", "/tmp");
@@ -88,12 +57,10 @@ LIST *game_histo_getlist() {
         if(!p || strcmp(".histo", p))   // if there isn't a dot or the file extension isn't .histo, bye bye
             continue;
 
-        snprintf(fpath, sizeof(fpath), "/tmp/%s", dire->d_name);    // build the temporary absolute path to the histo file
-
-        if(game_histo_check(fpath))  // check this is a valid .histo file
-            continue;
-
         *p='\0';    // remove the extension from the filename
+
+        if(game_histo_check(dire->d_name))  // check this is a valid .histo file
+            continue;
 
         files=list_append(files, (void *)xstrdup(dire->d_name));    // append game name without extension
     }
@@ -110,7 +77,7 @@ LIST *game_histo_getlist() {
 int game_histo_load(sGame *g, const char *name) {
     FILE *f;
     char line[256];
-    int ret;
+    int ret, ffull=0;
     sGameConf *conf=&g->conf;
     sGameState *state=&g->st;
 
@@ -131,12 +98,10 @@ int game_histo_load(sGame *g, const char *name) {
                 fclose(f);
                 return 1;
             }
-
-fprintf(stderr, "HX%s %s %04d%04d\n", conf->playername[P_1], conf->playername[P_2], (int)conf->t_total, (int)conf->t_turn);
         }
-        else if(line[0]=='F' && line[1]=='I' && line[2]=='N') {
-            // OK, TODO check magic/CRC? and return 1
-fprintf(stderr, "FIN\n");
+        else if(line[0]=='F' && line[1]=='I' && line[2]=='N' && line[3]=='H' && line[4]=='X') {
+            // OK, TODO check magic/CRC? and return 1 if fail
+            ffull=1;
             break;
         }
         else {  // get turn
@@ -158,13 +123,14 @@ fprintf(stderr, "FIN\n");
                 return 1;
             }
 
-fprintf(stderr, "%04d%s(%d) %u\n", (int)turn->t_remaining, player, turn->player, turn->type);
-
             g->turns=list_append(g->turns, turn);
         }
     }
 
     fclose(f);
+
+    if(!ffull)
+        return 1;
 
     // set initial state based on the last played turn
     if(g->turns) {
@@ -214,7 +180,7 @@ int game_histo_save(const sGame *g) {
         turns=turns->next;
     }
 
-    fprintf(f, "FIN\r\n");
+    fprintf(f, "FINHX\r\n");
 
     fclose(f);
 
