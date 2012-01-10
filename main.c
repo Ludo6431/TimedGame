@@ -65,8 +65,10 @@ int main(int argc, char *argv[]) {
         else
             sprintf(ps1, "%s> ", conf->playername[game.pme]);    // print our name
 
-        if(!(choix=menu_run(MenuState, msgmenu, ps1, buf, sizeof(buf))) || !strlen(choix))
+        if(!(choix=menu_run(MenuState, msgmenu, ps1, buf, sizeof(buf))) || !strlen(choix)) {
+            strcpy(msgmenu, "Entrée invalide");
             continue;   // loop
+        }
 
         switch(choix[0]) {
         case '1':   // M_MAIN, "Nouvelle partie"
@@ -82,7 +84,7 @@ int main(int argc, char *argv[]) {
 
                 sprintf(msgmenu, "Vous venez de rejoindre %s, partie en %us (%us par tour)", conf->playername[!game.pme], (unsigned int)conf->t_total, (unsigned int)conf->t_turn);
 
-                timer_start(&timer_glob, conf->t_total);
+                timer_start(&timer_glob, state->t_remaining);
                 if(MenuState==M_MYTURN)
                     timer_start(&timer_turn, conf->t_turn);
             }
@@ -185,7 +187,7 @@ int main(int argc, char *argv[]) {
         case '/':   // M_MYTURN, "Jouer un coup"
             timer_stop(&timer_turn);
 
-            jouer_coup(&game, choix+1);
+            ret=jouer_coup(&game, choix+1);
             if(state->state==GS_WIN) {
                 timer_stop(&timer_glob);
 
@@ -197,6 +199,9 @@ int main(int argc, char *argv[]) {
             }
             else
                 MenuState=(game_isit_myturn(&game)?M_MYTURN:M_HISTURN);
+
+            if(ret==-2)
+                strcpy(msgmenu, "Coup invalide");
 
             if(MenuState==M_MYTURN)
                 timer_start(&timer_turn, conf->t_turn);

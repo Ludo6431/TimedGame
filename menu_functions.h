@@ -12,7 +12,7 @@ int     connexion                   (sGame *g);
 int     reprise_partie_sauvegarde   (sGame *g);
 int     sauvegarder                 (sGame *g);
 void    afficher_historique         (sGame *g);
-void    jouer_coup                  (sGame *g, char *s);
+int     jouer_coup                  (sGame *g, char *s);
 void    retour_menu                 (sGame *g, int del);
 
 #endif

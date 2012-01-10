@@ -107,7 +107,6 @@ int nouvelle_partie(sGame *g) {
 
 int connexion(sGame *g) {
     sGameConf *conf = game_get_conf(g, NULL);
-    sGameState *state = game_get_state(g, NULL);
     char tmp[256];
     unsigned int utmp;
     LIST *ltmp;
@@ -173,14 +172,6 @@ int connexion(sGame *g) {
         readStdin(tmp, sizeof(tmp));
         strcpy(conf->playername[g->pme], tmp);
     }
-
-    // FIXME: attention, ceci est recouvert par le menu
-    printf("Configuration du jeu :\n");
-    printf("Vous       : %s\n", conf->playername[g->pme]);
-    printf("Adversaire : %s\n", conf->playername[!g->pme]);
-    printf("%s commence\n", conf->playername[state->pcurr]);
-    printf("Durée de la partie : %us\n", (unsigned int)conf->t_total);
-    printf("Durée par coup     : %us\n", (unsigned int)conf->t_turn);
 
     // let's say we are ready and give the full configuration to the hist (with our name)
     msg.type=MSG_READY;
@@ -325,8 +316,9 @@ void afficher_historique(sGame *g) {
 }
 
 
-void jouer_coup(sGame *g, char *s) {
-    sGameConf *conf=game_get_conf(g, NULL);
+int jouer_coup(sGame *g, char *s) {
+    int ret=0;
+
     sGameState *state=game_get_state(g, NULL);
     sMsg msg;
     sGameTurn *turn = (sGameTurn *)msg.data;
@@ -338,27 +330,17 @@ void jouer_coup(sGame *g, char *s) {
         turn->type=T_OK;
     else if(!strcasecmp(s, "gagne") || !strcasecmp(s, ":D"))
         turn->type=T_WIN;
-    else
+    else {
         turn->type=T_INVALID;
-
-    // FIXME: attention, ceci est recouvert par le menu
-    printf("%s : ", conf->playername[turn->player]);
-    switch(turn->type) {
-    case T_OK:
-        printf("coup normal :)\n");
-        break;
-    case T_INVALID:
-        printf("coup invalide :x\n");
-        break;
-    case T_WIN:
-        printf("coup gagnant :D\n");
-        break;
+        ret=-2;
     }
 
     game_playturn(g, turn);
 
     msg.type=MSG_TURN;
     msg_send(&msg, sizeof(*turn));
+
+    return ret;
 }
 
 void retour_menu(sGame *g, int del) {
