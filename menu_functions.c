@@ -119,8 +119,7 @@ int connexion(sGame *g) {
 
         ltmp=l=get_games(GT_WAITING);
         if(!ltmp)
-// TODO: print message
-            return -1;   // aucune partie en attente de joueur
+            return -2;   // aucune partie en attente de joueur
 
         printf("Parties ouvertes :\n");
         while(ltmp) {
@@ -209,8 +208,7 @@ int reprise_partie_sauvegarde(sGame *g) {
 
         ltmp=l=get_games(GT_NOT_RUNNING);
         if(!ltmp)
-// TODO: print message
-            return -1;   // aucune partie sauvegardée
+            return -2;   // aucune partie sauvegardée
 
         printf("Parties sauvegardées :\n");
         while(ltmp) {

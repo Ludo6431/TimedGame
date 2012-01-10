@@ -35,7 +35,8 @@ int main(int argc, char *argv[]) {
     sMsg msg;
     char buf[256];
     char *choix;
-    int ljump;
+    int ljump, ret;
+    char msgmenu[64]={0}; // one-line message in the menu
 
     sTimer timer_glob={ 0, _timer_glob, (void *)&game, &jumpenv, 10 /* FIXME */ };
     sTimer timer_conn={ 0, _timer_conn, (void *)2    , &jumpenv, LJUMP_TIMER };
@@ -46,10 +47,9 @@ int main(int argc, char *argv[]) {
 
         // TODO: flush the input buffer before printing the new menu
 
-        // TODO: prévoir une zone à l'écran (avant ou après le menu) dans laquelle on pourra afficher des messages
         printf("\n\n");
 
-        if(!(choix=menu_run(MenuState, buf, sizeof(buf))) || !strlen(choix))
+        if(!(choix=menu_run(MenuState, msgmenu, buf, sizeof(buf))) || !strlen(choix))
             continue;   // loop
 
         switch(choix[0]) {
@@ -61,20 +61,24 @@ int main(int argc, char *argv[]) {
             MenuState=M_WAITCON;
             break;
         case '2':   // M_MAIN, "Connexion à une partie"
-            if(!connexion(&game)) { // ok
+            if(!(ret=connexion(&game))) { // ok
                 MenuState=(game_isit_myturn(&game)?M_MYTURN:M_HISTURN);
 
                 timer_start(&timer_glob, conf->t_total);
                 if(MenuState==M_MYTURN)
                     timer_start(&timer_turn, conf->t_turn);
             }
+            else if(ret==-2)
+                strcpy(msgmenu, "Il n'y a aucune partie en attente de joueurs");
             break;
         case '3':   // M_MAIN, "Charger une partie sauvegardée"
-            if(!reprise_partie_sauvegarde(&game)) { // ok
+            if(!(ret=reprise_partie_sauvegarde(&game))) { // ok
                 timer_start(&timer_conn, 30);
 
                 MenuState=M_WAITCON;
             }
+            else if(ret==-2)
+                strcpy(msgmenu, "Il n'y a aucune partie sauvegardee");
             break;
         case '4':   // M_MYTURN|M_HISTURN|M_PAUSED, "Stopper en sauvegardant" -> retour au menu principal
             if(MenuState==M_MYTURN)
@@ -85,7 +89,8 @@ int main(int argc, char *argv[]) {
 
             msg.type=MSG_END;
             msg.data[0]=0;  // keep histo file
-            msg_send(&msg, 1);
+            strcpy(&msg.data[1], "L'autre joueur a quitte en sauvegardant");
+            msg_send(&msg, 1+strlen(&msg.data[1])+1);
 
             retour_menu(&game, 0 /* keep histo file */);
 
@@ -131,7 +136,8 @@ int main(int argc, char *argv[]) {
 
             msg.type=MSG_END;
             msg.data[0]=1;  // delete histo file
-            msg_send(&msg, 1);
+            strcpy(&msg.data[1], "L'autre joueur a quitte");
+            msg_send(&msg, 1+strlen(&msg.data[1])+1);
 
             retour_menu(&game, 1 /* delete histo file */);
 
@@ -150,7 +156,8 @@ int main(int argc, char *argv[]) {
 
                 msg.type=MSG_END;
                 msg.data[0]=1;  // delete histo file
-                msg_send(&msg, 1);
+                strcpy(&msg.data[1], "L'autre joueur a quitte");
+                msg_send(&msg, 1+strlen(&msg.data[1])+1);
 
                 retour_menu(&game, 1 /* delete histo file */);
 
@@ -165,6 +172,8 @@ int main(int argc, char *argv[]) {
                 timer_stop(&timer_glob);
 
                 retour_menu(&game, 1 /* delete histo file */);
+
+                strcpy(msgmenu, "Bravo, tu as gagne");
 
                 MenuState=M_MAIN;
             }
@@ -184,11 +193,12 @@ int main(int argc, char *argv[]) {
             if(MenuState!=M_WAITCON)
                 timer_stop(&timer_glob);
 
-            // TODO afficher message erreur
+            strcpy(msgmenu, "Temps ecoule, tu as perdu");
 
             msg.type=MSG_END;
             msg.data[0]=1;  // delete histo file
-            msg_send(&msg, 1);   // let's tell the other process we're done
+            strcpy(&msg.data[1], "Temps ecoule pour l'autre joueur, tu as gagne");
+            msg_send(&msg, 1+strlen(&msg.data[1])+1);
 
             retour_menu(&game, 1 /* delete histo file */);
 
@@ -211,6 +221,8 @@ int main(int argc, char *argv[]) {
                     timer_stop(&timer_glob);
 
                     retour_menu(&game, 1 /* delete histo file */);
+
+                    strcpy(msgmenu, "Tu as perdu");
 
                     MenuState=M_MAIN;
                 }
@@ -248,6 +260,8 @@ int main(int argc, char *argv[]) {
                 if(MenuState==M_MYTURN)
                     timer_stop(&timer_turn);
                 timer_stop(&timer_glob);
+
+                strcpy(msgmenu, &last_msg.data[1]);
 
                 retour_menu(&game, last_msg.data[0]); // we quit aswell
 

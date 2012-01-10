@@ -56,7 +56,7 @@ int _get_max_items() {
 }
 
 // affiche le menu pour un état de menu donné, récupère une ligne tapée au clavier par l'utilisateur et vérifie que le choix est possible
-char *menu_run(eMenuState st, char *buf, unsigned int size) {
+char *menu_run(eMenuState st, char *msg, char *buf, unsigned int size) {
     char *ret;
     int i, nb=0;
     static int nbitemsmax = 0;
@@ -78,10 +78,14 @@ char *menu_run(eMenuState st, char *buf, unsigned int size) {
             nb++;
         }
 
-    for(i=nb; i<nbitemsmax+2; i++)
+    for(i=nb; i<nbitemsmax+1; i++)
         printf("\x1b[K\n"); // clear the line and write the new content
 
-    printf(">");    // ceci sera toujours affiché au même endroit peut-importe le nombre d'éléments dans le menu (cf boucle ci-dessus) 
+    if(msg && *msg)
+        printf("\x1b[05m%s\x1b[00m", msg);
+    msg[0]='\x0';
+
+    printf("\n>");    // ceci sera toujours affiché au même endroit peut-importe le nombre d'éléments dans le menu (cf boucle ci-dessus) 
     fflush(stdout);
 
     // get a line from the standard input
